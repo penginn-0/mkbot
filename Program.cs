@@ -1,0 +1,378 @@
+﻿using Microsoft.Extensions.Configuration;
+using System.Text;
+using System.Text.Json;
+using WebSocket4Net;
+using DynaJson;
+using mkbot.ReActions;
+namespace mkbot
+{
+
+    public class Program
+    {
+        static string IuserName = "";
+        static WebSocket Socket;
+        static HttpClient Hc = new();
+        static Config Cfg;
+        public static List<User> Users = new();
+        static List<Func<NoteInfo, ReAction>> funcs;
+        static System.Timers.Timer timer = new();
+        static List<ReAction> Queue = new();
+        static int WaitTimeMS = 1500;
+        public static void Main()
+        {
+           var conf = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddIniFile("config.ini")
+                .Build().GetSection("APP").Get<Config>();
+            if (conf is null)
+            {
+                Console.WriteLine("Config is null");
+                Console.ReadLine();
+                return;
+            }
+            Cfg = conf;
+            LoadMemory();
+            InitAndAddFunction();
+            if (Check_I())
+            {
+                InitSoclket();
+                while (true)
+                {
+                    var key = Console.ReadKey();
+                    if (key.Key == ConsoleKey.Escape)
+                    {
+                        break;
+                    }
+                    Console.WriteLine("\rESCで終了");
+                }
+                Socket.Close();
+            }
+
+        }
+        static void LoadMemory()
+        {
+            if (File.Exists("memory.json"))
+            {
+                var json = File.ReadAllText("memory.json");
+                var dyna = DynaJson.JsonObject.Parse(json);
+                foreach (var item in dyna)
+                {
+                    var user = new User(item.username,item.Host,(int)item.Love);
+                    Users.Add(user);
+                }
+            }
+        }
+        static bool Check_I()
+        {
+            var I = new I_Rootobject()
+            {
+                i = Cfg.token
+            }; 
+            try
+            {
+                var Content = new StringContent(JsonSerializer.Serialize(I), Encoding.UTF8, @"application/json");
+                var res = Hc.PostAsync($"https://{Cfg.host}/api/i", Content);
+                var con = res.Result.Content.ReadAsStringAsync().Result;
+
+                var ret = DynaJson.JsonObject.Parse(con);
+                IuserName = ret.username;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
+            }
+            if (IuserName == "")
+            {
+                return false;
+            }
+            Console.WriteLine("username:" + IuserName);
+            return true;
+        }
+        static void InitSoclket()
+        {
+            timer.Elapsed += Socket_Reconnect;
+            timer.Interval = 5000;
+
+
+            Socket = new WebSocket($"wss://{Cfg.host}/streaming?i={Cfg.token}")
+            {
+                NoDelay = true,
+                ReceiveBufferSize = 81920,
+                AutoSendPingInterval = 10
+            };
+            Socket.MessageReceived += Socket_MessageReceived;
+            //Socket.Error += Socket_Reconnect;
+            Socket.Closed  += (sender, e) =>
+            { 
+                Console.WriteLine("Socket Closed");
+                timer.Enabled  = true;
+            };
+            Socket.Opened += (sender, e) =>
+            {
+                var RO = new Connect_Rootobject()
+                {
+                    type = "connect",
+                    body = new Body()
+                    {
+                        channel = "main",
+                        id = new Random().Next().ToString()
+                    }
+                };
+                Socket.Send(JsonSerializer.Serialize(RO));
+                 RO = new Connect_Rootobject()
+                {
+                    type = "connect",
+                    body = new Body()
+                    {
+                        channel = "homeTimeline",
+                        id = new Random().Next().ToString()
+                    }
+                };
+                Socket.Send(JsonSerializer.Serialize(RO));
+                Console.WriteLine("Socket Opened");
+            };
+            Socket.Open();
+        }
+        static void Socket_MessageReceived(object sender, MessageReceivedEventArgs e)
+        {
+            Console.WriteLine("DataReceived=" + DateTime.Now);
+            Console.WriteLine(e.Message);
+            var dyna = DynaJson.JsonObject.Parse(e.Message);
+            Console.WriteLine("type:" + dyna.type);
+            Console.WriteLine("bodytype:" + dyna.body.type);
+            switch (dyna.body.type)
+            {
+                case "note":
+                    if(dyna.body.body.renoteId != null|| dyna.body.body.text is null) { return;}
+                    var Text = DeleteMention(dyna.body.body.text, dyna.body.body.user.host switch
+                    { null => "", _ => dyna.body.body.user.host });
+                    var Arg = new NoteInfo()
+                    {
+                        uId = dyna.body.body.userId,
+                        nId = dyna.body.body.id,
+                        Text = Text,
+                        IsNotMention = true,
+                        Visibility = dyna.body.body.visibility,
+                        visibleUserIds = dyna.body.body.userId,
+                        username = dyna.body.body.user.username,
+                        Host = dyna.body.body.user.host
+                    };
+                    ReAction Reac = new ReAction();
+                    foreach (var Func in funcs)
+                    {
+                        Reac = Func(Arg);
+                        if (Reac != null) { break; }
+                    }
+                    if (Reac is null)
+                    {
+                        return;
+                    }
+                    Task.Run(() => Process(Reac));
+                    break;
+
+                case "notification":
+                Console.WriteLine("notificationtype:" + dyna.body.body.type);
+                switch (dyna.body.body.type)
+                {
+                    case "mention":
+                        Console.WriteLine("text:" + dyna.body.body.note.text);
+                       Text =  DeleteMention(dyna.body.body.note.text, dyna.body.body.note.user.host switch
+                        { null => "",_ => dyna.body.body.note.user.host});
+                        Console.WriteLine("text:" + Text);
+                         Arg = new NoteInfo()
+                        {
+                            uId = dyna.body.body.note.userId,
+                            nId = dyna.body.body.note.id,
+                            Text = Text,
+                            Visibility = dyna.body.body.note.visibility,
+                            visibleUserIds = dyna.body.body.note.userId,
+                            username = dyna.body.body.note.user.username,
+                            Host = dyna.body.body.note.user.host
+                        };
+                         Reac = new ReAction();
+                        foreach(var Func in funcs)
+                        {
+                            Reac = Func(Arg);
+                           if (Reac  != null) { break; }
+                        }
+                        if (Reac is null)
+                        {
+                            return;
+                        }
+                        Task.Run(() => Process(Reac));
+                        break;
+                    case "reply":
+                        break;
+                    case "reaction":
+                        break;
+                }
+                    break;
+
+                case "follow":
+                var user = new User();
+                user.Register(dyna.body.body.username, dyna.body.body.host);
+                Users.Add(user);
+                var json = JsonSerializer.Serialize(Users);
+                File.WriteAllText("memory.json", json);
+                Console.WriteLine($"followed:@{dyna.body.body.username}@{dyna.body.body.host}");
+                break;
+            }
+            Console.WriteLine();
+        }
+        static void Socket_Reconnect(object sender, EventArgs e)
+        {
+            if (Socket.State == WebSocketState.Closed)
+            {
+                Console.WriteLine("Socket ReOpening...");
+                Socket.Open();
+                if(Socket.State == WebSocketState.Open)
+                {
+                 timer.Enabled = false;
+                    if (0 < Queue.Count)
+                    {
+                        var Posted = new List<string>();
+                        foreach (var item in Queue)
+                        {
+                            Socket.Send(JsonSerializer.Serialize(item));
+                        }
+                    }
+                }
+            }
+            else
+            { 
+                timer.Enabled = false;
+            }
+        }
+        static string DeleteMention(string text, string Remote)
+        {
+            if (Remote == "")
+            {
+              return text.Replace($"@{IuserName}", "");
+            }
+            else
+            {
+              return text.Replace($"@{IuserName}@{Cfg.host}", "");
+            }
+        }
+        static bool Process(ReAction Reac, bool FromQueue =false)
+        {if(Socket.State != WebSocketState.Open) 
+            {
+                if (FromQueue == false) { Queue.Add(Reac); }
+                return false;
+            }
+         Task.Delay(WaitTimeMS).Wait();
+            switch (Reac.Type) 
+            {
+                case ReAction.ReactionType.ReAction:
+                   Post("notes/reactions/create", JsonSerializer.Serialize(new Reactions_Create()
+                   {
+                        i = Cfg.token,
+                        noteId = Reac.nId,
+                        reaction = Reac.Emoji
+                    }));
+                    break;
+                case ReAction.ReactionType.Reply:
+                   Post("notes/create", JsonSerializer.Serialize(new Notes_Create()
+                    {
+                        i = Cfg.token,
+                        text = Reac.Text,
+                        replyId = Reac.nId,
+                        visibility = Reac.Visibility,
+                        visibleUserIds = Reac.visibleUserIds
+                    }));
+                    break;
+                case ReAction.ReactionType.ReplyAndReaction:
+                    Post("notes/create", JsonSerializer.Serialize(new Notes_Create()
+                    {
+                        i = Cfg.token,
+                        text = Reac.Text,
+                        replyId = Reac.nId,
+                        visibility = Reac.Visibility,
+                       visibleUserIds = Reac.visibleUserIds
+                    }));
+                   Post("notes/reactions/create", JsonSerializer.Serialize(new Reactions_Create()
+                    {
+                        i = Cfg.token,
+                        noteId = Reac.nId,
+                        reaction = Reac.Emoji
+                    }));
+                    break;
+                case ReAction.ReactionType.Registar:
+                    return Post(JsonSerializer.Serialize(new Following_Create()
+                    {
+                        i = Cfg.token,
+                        userId = Reac.uId
+                    })) ;
+                case ReAction.ReactionType.none:
+                    return true;
+
+            }
+            return true;
+        }
+        static void Post(string EndPoint, string Json)
+        {
+            try
+            {
+                var Content = new StringContent(Json, Encoding.UTF8, @"application/json");
+                var res = Hc.PostAsync($"https://{Cfg.host}/api/{EndPoint}", Content).Result;
+                var Ret = res.Content.ReadAsStringAsync().Result;
+                Console.WriteLine(Ret);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+        static bool Post(string Json)
+        {
+            try
+            {
+                var Content = new StringContent(Json, Encoding.UTF8, @"application/json");
+                var res = Hc.PostAsync($"https://{Cfg.host}/api/following/create", Content);
+                var json =res.Result.Content.ReadAsStringAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            return true;
+
+        }
+        static void InitAndAddFunction() 
+        {
+           funcs =  new List<Func<NoteInfo,ReAction>>();
+            var nadenade = new Base(new List<string>() { "なでなで","なでなでしてあげましょうね" },"💞", new List<string>() { "" }, new List<string>() { "ふふん♪" }, new List<string>() { "そ、外ではあまりなでるでない・・・///" },false,"👀",5);
+            var koyaaan  = new Base(new List<string>() { "こやーん" }, "🦊", new List<string>() { "" }, new List<string>() { "こやーん" }, new List<string>() { "こやーん" }, true,"");
+            var registar = new Registar(new List<string>() { "ふぉろー", "フォロー" }, "", new List<string>() { "" }, new List<string>() { "" }, new List<string>() { "" }, false);
+            funcs.Add(nadenade.CheckMessage);//追加したかったらここの前後に追加する(上に行くほど優先度が高い)
+            funcs.Add(koyaaan.CheckMessage);
+            funcs.Add(registar.CheckMessage);
+            funcs.Add(Default.CheckMessage);
+        }
+    }
+    //メッセージが邪魔なので
+#pragma warning disable CS8618 
+#pragma warning disable IDE1006 
+    public class Connect_Rootobject
+    {
+        public string type { get; set; }
+        public Body body { get; set; }
+    }
+
+    public class Body
+    {
+        public string channel { get; set; } 
+        public string id { get; set; } 
+    }
+    public class I_Rootobject
+    {
+        public string i { get; set; }
+    }
+    public class Config
+    {
+        public string host { get; set; }
+        public string token { get; set; }
+    }
+#pragma warning restore CS8618
+}
