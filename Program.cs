@@ -119,9 +119,8 @@ namespace mkbot
                     }
                 };
                 Socket.Send(JsonSerializer.Serialize(RO));
-                 RO.body ={
-                        channel = "homeTimeline",
-                        id = new Random().Next().ToString()};
+                 RO.body.channel = "homeTimeline";
+                 RO.body.id = new Random().Next().ToString();
                 Socket.Send(JsonSerializer.Serialize(RO));
                 Console.WriteLine("Socket Opened");
             };
@@ -130,26 +129,29 @@ namespace mkbot
         static void Socket_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
             Console.WriteLine("DataReceived=" + DateTime.Now);
+#if DEBUG
             Console.WriteLine(e.Message);
+#endif
             var dyna = DynaJson.JsonObject.Parse(e.Message);
             Console.WriteLine("type:" + dyna.type);
             Console.WriteLine("bodytype:" + dyna.body.type);
+            var Body =dyna.body.body;
             switch (dyna.body.type)
             {
                 case "note":
-                    if(dyna.body.body.renoteId != null|| dyna.body.body.text is null) { return;}
-                    var Text = DeleteMention(dyna.body.body.text, dyna.body.body.user.host switch
-                    { null => "", _ => dyna.body.body.user.host });
+                    if(Body.renoteId != null|| Body.text is null) { return;}
+                    var Text = DeleteMention(Body.text, Body.user.host switch
+                    { null => "", _ => Body.user.host });
                     var Arg = new NoteInfo()
                     {
-                        uId = dyna.body.body.userId,
-                        nId = dyna.body.body.id,
+                        uId = Body.userId,
+                        nId = Body.id,
                         Text = Text,
                         IsNotMention = true,
-                        Visibility = dyna.body.body.visibility,
-                        visibleUserIds = dyna.body.body.userId,
-                        username = dyna.body.body.user.username,
-                        Host = dyna.body.body.user.host
+                        Visibility = Body.visibility,
+                        visibleUserIds = Body.userId,
+                        username = Body.user.username,
+                        Host = Body.user.host
                     };
                     ReAction Reac = new ReAction();
                     foreach (var Func in funcs)
@@ -165,23 +167,21 @@ namespace mkbot
                     break;
 
                 case "notification":
-                Console.WriteLine("notificationtype:" + dyna.body.body.type);
-                switch (dyna.body.body.type)
+                Console.WriteLine("notificationtype:" + Body.type);
+                switch (Body.type)
                 {
                     case "mention":
-                        Console.WriteLine("text:" + dyna.body.body.note.text);
-                       Text =  DeleteMention(dyna.body.body.note.text, dyna.body.body.note.user.host switch
-                        { null => "",_ => dyna.body.body.note.user.host});
-                        Console.WriteLine("text:" + Text);
+                       Text =  DeleteMention(Body.note.text, Body.note.user.host switch
+                        { null => "",_ => Body.note.user.host});
                          Arg = new NoteInfo()
                         {
-                            uId = dyna.body.body.note.userId,
-                            nId = dyna.body.body.note.id,
+                            uId = Body.note.userId,
+                            nId = Body.note.id,
                             Text = Text,
-                            Visibility = dyna.body.body.note.visibility,
-                            visibleUserIds = dyna.body.body.note.userId,
-                            username = dyna.body.body.note.user.username,
-                            Host = dyna.body.body.note.user.host
+                            Visibility = Body.note.visibility,
+                            visibleUserIds = Body.note.userId,
+                            username = Body.note.user.username,
+                            Host = Body.note.user.host
                         };
                          Reac = new ReAction();
                         foreach(var Func in funcs)
@@ -204,11 +204,11 @@ namespace mkbot
 
                 case "follow":
                 var user = new User();
-                user.Register(dyna.body.body.username, dyna.body.body.host);
+                user.Register(Body.username, Body.host);
                 Users.Add(user);
                 var json = JsonSerializer.Serialize(Users);
                 File.WriteAllText("memory.json", json);
-                Console.WriteLine($"followed:@{dyna.body.body.username}@{dyna.body.body.host}");
+                Console.WriteLine($"followed:@{Body.username}@{Body.host}");
                 break;
             }
             Console.WriteLine();
@@ -231,7 +231,8 @@ namespace mkbot
         }
         static string DeleteMention(string text, string Remote)
         {
-            if (Remote == "")
+            Console.WriteLine($"text:{{{text}}}");
+            if(Remote == "")
             {
               return text.Replace($"@{IuserName}", "");
             }
@@ -240,7 +241,7 @@ namespace mkbot
               return text.Replace($"@{IuserName}@{Cfg.host}", "");
             }
         }
-        static bool Process(ReAction Reac, bool FromQueue =false)
+        static bool Process(ReAction Reac)
         {
             if(Socket.State != WebSocketState.Open) 
             {return false;}
@@ -283,11 +284,12 @@ namespace mkbot
                     }));
                     break;
                 case ReAction.ReactionType.Registar:
-                    return Post(JsonSerializer.Serialize(new Following_Create()
+                    Post(JsonSerializer.Serialize(new Following_Create()
                     {
                         i = Cfg.token,
                         userId = Reac.uId
-                    })) ;
+                    }));
+                    break;
                 case ReAction.ReactionType.none:
                     return true;
 
