@@ -42,6 +42,7 @@ namespace mkbot
             InitAndAddFunction();
             if (Check_I())
             {
+                Console.WriteLine(Cfg.InitMessage.Replace("<r>", "\r\n"));
                 InitSoclket();
                 while (true)
                 {
@@ -50,7 +51,7 @@ namespace mkbot
                     {
                         break;
                     }
-                    Console.WriteLine("\rESCで終了");
+                    Console.WriteLine("\r\nESCで終了");
                 }
                 Socket.Close();
             }
@@ -60,7 +61,7 @@ namespace mkbot
         {
             if (File.Exists("memory.json"))
             {
-                Console.WriteLine("Loading memory ...");
+                Console.WriteLine("Loading memory...");
                 var json = File.ReadAllText("memory.json");
                 var dyna = JsonObject.Parse(json);
                 foreach (var item in dyna)
@@ -68,6 +69,11 @@ namespace mkbot
                     var user = new User(item.username,item.Host,(int)item.Love);
                     Users.Add(user);
                 }
+                Console.WriteLine("memory loaded");
+            }
+            else
+            {
+                Console.WriteLine("memory not found");
             }
         }
         static bool Check_I()
@@ -136,7 +142,7 @@ namespace mkbot
         }
         static void Socket_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
-            Console.WriteLine("\rDataReceived=" + DateTime.Now);
+            Console.WriteLine("\r\nDataReceived=" + DateTime.Now);
 #if DEBUG
             Console.WriteLine(e.Message);
 #endif
@@ -368,6 +374,8 @@ namespace mkbot
     {
         public string host { get; set; }
         public string token { get; set; }
+
+        public string InitMessage { get; set; }
     }
 #pragma warning restore CS8618
 }
