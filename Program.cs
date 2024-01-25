@@ -13,11 +13,10 @@ namespace mkbot
         static WebSocket Socket;
         static HttpClient Hc = new();
         static Config Cfg;
-        public static List<User> Users = new();
-        static List<Func<NoteInfo, ReAction>> funcs;
+        public static List<User> Users;
+        static List<Func<NoteInfo, ReAction?>> funcs =new();
         static System.Timers.Timer timer = new();
-        static List<ReAction> Queue = new();
-        static int WaitTimeMS = 1500;
+        static readonly int WaitTimeMS = 1500;
         public static void Main()
         {
             if (!(File.Exists("config.ini")))
@@ -342,19 +341,16 @@ namespace mkbot
         }
         static void InitAndAddFunction() 
         {
-           funcs =  new List<Func<NoteInfo,ReAction>>();
+           funcs =  new();
             var nadenade = new Base(new List<string>() { "なでなで","なでなでしてあげましょうね" },"💞", new List<string>() { "" }, new List<string>() { "ふふん♪" }, new List<string>() { "そ、外ではあまりなでるでない・・・///" },false,"👀",5);
-            var koyaaan  = new Base(new List<string>() { "こやーん" }, "🦊", new List<string>() { "" }, new List<string>() { "こやーん" }, new List<string>() { "こやーん" }, true,"");
-            var registar = new Registar(new List<string>() { "ふぉろー", "フォロー" }, "", new List<string>() { "" }, new List<string>() { "" }, new List<string>() { "" }, false);
+            var koyaaan  = new Base(new List<string>() { "こやーん" }, "🦊", new List<string>() { "" }, new List<string>() { "こやーん" }, new List<string>() { "こやーん" });
+            var registar = new Registar(new List<string>() { "ふぉろー", "フォロー" }, "", new List<string>() { "" }, new List<string>() { "" }, new List<string>() { "" });
             funcs.Add(nadenade.CheckMessage);//追加したかったらここの前後に追加する(上に行くほど優先度が高い)
             funcs.Add(koyaaan.CheckMessage);
             funcs.Add(registar.CheckMessage);
             funcs.Add(Default.CheckMessage);
         }
     }
-    //メッセージが邪魔なので
-#pragma warning disable CS8618 
-#pragma warning disable IDE1006 
     public class Connect_Rootobject
     {
         public string type { get; set; }
@@ -377,5 +373,4 @@ namespace mkbot
 
         public string InitMessage { get; set; }
     }
-#pragma warning restore CS8618
 }

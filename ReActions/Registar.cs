@@ -8,10 +8,10 @@ namespace mkbot.ReActions
 {
     internal class Registar :Base
     {
-        public Registar(List<string> keyword, string emoji, List<string> Hate, List<string> Normal, List<string> Love,bool Reply) : base(keyword, emoji, Hate, Normal, Love, Reply,"")
+        public Registar(List<string> keyword, string emoji, List<string> Hate, List<string> Normal, List<string> Love) : base(keyword, emoji, Hate, Normal, Love)
         {
         }
-        public ReAction  CheckMessage(NoteInfo note)
+        public ReAction? Check_Message(NoteInfo note)
         {
             if (note.IsNotMention == true) { return null; }
 
@@ -25,7 +25,7 @@ namespace mkbot.ReActions
                         Type = ReAction.ReactionType.Registar,
                         nId = note.nId,
                         uId = note.uId,
-                        Emoji = "❤️",
+                        Emoji = "👍",
                         Visibility = note.Visibility,
                         visibleUserIds = new string[1] { note.uId }
                     };

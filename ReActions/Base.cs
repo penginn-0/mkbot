@@ -31,7 +31,7 @@ namespace mkbot.ReActions
             this.NotMentionEmoji = NotMentionEmoji;
             this.Unit = Unit;
         }
-        private int Unit ;
+        private readonly int Unit;
         public readonly List<string>  Keyword;
         public readonly string Emoji;
         public readonly List<string> Reply_Hate;

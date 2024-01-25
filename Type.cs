@@ -54,8 +54,8 @@ namespace mkbot
         public void Register(string username ,string host) 
         { 
             this.username = username;
-            this.Host = host;
-            this.Love = 0;
+            Host = host;
+            Love = 0;
         }
         public void CalcLove(int Unit = LoveUnit)
         {
@@ -73,7 +73,6 @@ namespace mkbot
     /// </summary>
     internal class  ReAction
     {
-        const int DelayMS = 2500;
        public enum ReactionType
         {
         Reply,
