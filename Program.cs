@@ -32,9 +32,9 @@ namespace mkbot
                  .GetSection("APP")
                  .Get<Config>();
 
-            if (conf is null)
+            if (conf is null || conf.host == "" || conf.token == "")
             {
-                Console.WriteLine("Config is null");
+                Console.WriteLine("Config invalid");
                 return;
             }
             Cfg = conf;
@@ -94,7 +94,7 @@ namespace mkbot
             {
                 return false;
             }
-            Console.WriteLine("username:" + IuserName);
+            Console.WriteLine($"username:@{IuserName}@{Cfg.host}");
             return true;
         }
         static void InitSoclket()
@@ -136,7 +136,7 @@ namespace mkbot
         }
         static void Socket_MessageReceived(object sender, MessageReceivedEventArgs e)
         {
-            Console.WriteLine("DataReceived=" + DateTime.Now);
+            Console.WriteLine("\rDataReceived=" + DateTime.Now);
 #if DEBUG
             Console.WriteLine(e.Message);
 #endif
@@ -147,9 +147,14 @@ namespace mkbot
             switch (dyna.body.type)
             {
                 case "note":
-                    if(Body.renoteId != null|| Body.text is null) { return;}
-                    var Text = DeleteMention(Body.text, Body.user.host switch
-                    { null => "", _ => Body.user.host });
+                    //Renoteとかの対応
+                    if(Body.renoteId != null|| Body.text is null||Body.text == "") { return;}
+                    //dynamic型のためContainsするにはキャストが必要
+                    var Text = (string)Body.text;
+                    //メンションだったらスルー(メンション時判定があるので二重リアクション回避)
+                    if (Text.Contains($"@{IuserName}@{Cfg.host}")) { return; }
+                    Text= DeleteMention(Body.text, Body.user.host switch
+                    { null => "", _ => Body.user.host});
                     var Arg = new NoteInfo()
                     {
                         uId = Body.userId,
@@ -218,7 +223,6 @@ namespace mkbot
                 Console.WriteLine($"followed:@{Body.username}@{Body.host}");
                 break;
             }
-            Console.WriteLine();
         }
         static void Socket_Reconnect(object sender, EventArgs e)
         {

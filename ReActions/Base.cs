@@ -9,18 +9,18 @@ namespace mkbot.ReActions
 {
     internal class Base
     {
-        public Base(List<string> keyword, string emoji, List<string> Hate, List<string> Normal, List<string> Love,bool NotMentionReply,string NotMentionEmoji)
+        public Base(List<string> keyword, string emoji, List<string> Hate, List<string> Normal, List<string> Love, int Unit = User.LoveUnit)
         {
             Keyword = keyword;
             Emoji = emoji;
             Reply_Hate = Hate;
             Reply_Normal = Normal;
             Reply_Love = Love;
-            Unit = User.LoveUnit;
-            this.NotMentionReply = NotMentionReply;
-            this.NotMentionEmoji = NotMentionEmoji;
+            NotMentionReply = false;
+            NotMentionEmoji = "none";
+            this.Unit = Unit;
         }
-        public Base(List<string> keyword, string emoji, List<string> Hate, List<string> Normal, List<string> Love, bool NotMentionReply, string NotMentionEmoji, int Unit)
+        public Base(List<string> keyword, string emoji, List<string> Hate, List<string> Normal, List<string> Love, bool NotMentionReply, string NotMentionEmoji, int Unit = User.LoveUnit)
         {
             Keyword = keyword;
             Emoji = emoji;
@@ -50,7 +50,7 @@ namespace mkbot.ReActions
             }
             return false;
         }
-        public ReAction CheckMessage(NoteInfo note)
+        public ReAction? CheckMessage(NoteInfo note)
         {
             if (CheckMessage(note.Text))
             {
@@ -64,13 +64,13 @@ namespace mkbot.ReActions
                         nId = note.nId
                     };
                 }
-                user.AddLove(Unit);
+                user.CalcLove(Unit);
                 var Reply = user.GetLoveLevel() switch
                 {
                     User.LoveLevel.Hate => Reply_Hate[new Random().Next(Reply_Hate.Count)],
                     User.LoveLevel.Normal => Reply_Normal[new Random().Next(Reply_Normal.Count)],
                     User.LoveLevel.Love => Reply_Love[new Random().Next(Reply_Love.Count)],
-                    _ => throw new Exception("なんかおかしい")
+                    _ => throw new Exception("なんかおかしい")//要らないけどおすすめされたので
                 };
                 var type = GetType(Reply);
                 var Emoji = this.Emoji;
@@ -87,6 +87,7 @@ namespace mkbot.ReActions
                             ReAction.ReactionType.ReplyAndReaction => ReAction.ReactionType.ReAction,
                             _ => type
                         };
+                        if (NotMentionEmoji == "none") { return null; }
                         Emoji = NotMentionEmoji;
                     }
                 }

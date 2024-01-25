@@ -57,10 +57,10 @@ namespace mkbot
             this.Host = host;
             this.Love = 0;
         }
-        public void AddLove(int Unit = LoveUnit)
+        public void CalcLove(int Unit = LoveUnit)
         {
             if(LoveMax <= Love) { return; }
-            this.Love+= Unit;
+            this.Love += Unit;
             var json = JsonSerializer.Serialize(Program.Users);
             File.WriteAllText("memory.json", json);
         }
@@ -68,6 +68,9 @@ namespace mkbot
         public string Host { get; private set; }
         public int Love { get; private set; }
     }
+    /// <summary>
+    /// リアクション用
+    /// </summary>
     internal class  ReAction
     {
         const int DelayMS = 2500;
@@ -87,6 +90,9 @@ namespace mkbot
         public string Visibility { get; set; }
         public string[] visibleUserIds { get; set; }
     }
+    /// <summary>
+    /// 判定とかに使うノート情報
+    /// </summary>
     internal class NoteInfo
     {
         public string uId { get; set; }
