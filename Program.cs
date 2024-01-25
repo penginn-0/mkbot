@@ -102,7 +102,6 @@ namespace mkbot
                 AutoSendPingInterval = 10
             };
             Socket.MessageReceived += Socket_MessageReceived;
-            //Socket.Error += Socket_Reconnect;
             Socket.Closed  += (sender, e) =>
             { 
                 Console.WriteLine("Socket Closed");
@@ -120,15 +119,9 @@ namespace mkbot
                     }
                 };
                 Socket.Send(JsonSerializer.Serialize(RO));
-                 RO = new Connect_Rootobject()
-                {
-                    type = "connect",
-                    body = new Body()
-                    {
+                 RO.body ={
                         channel = "homeTimeline",
-                        id = new Random().Next().ToString()
-                    }
-                };
+                        id = new Random().Next().ToString()};
                 Socket.Send(JsonSerializer.Serialize(RO));
                 Console.WriteLine("Socket Opened");
             };
@@ -228,15 +221,7 @@ namespace mkbot
                 Socket.Open();
                 if(Socket.State == WebSocketState.Open)
                 {
-                 timer.Enabled = false;
-                    if (0 < Queue.Count)
-                    {
-                        var Posted = new List<string>();
-                        foreach (var item in Queue)
-                        {
-                            Socket.Send(JsonSerializer.Serialize(item));
-                        }
-                    }
+                    timer.Enabled = false;
                 }
             }
             else
@@ -256,12 +241,11 @@ namespace mkbot
             }
         }
         static bool Process(ReAction Reac, bool FromQueue =false)
-        {if(Socket.State != WebSocketState.Open) 
-            {
-                if (FromQueue == false) { Queue.Add(Reac); }
-                return false;
-            }
-         Task.Delay(WaitTimeMS).Wait();
+        {
+            if(Socket.State != WebSocketState.Open) 
+            {return false;}
+            Task.Delay(WaitTimeMS).Wait();
+            
             switch (Reac.Type) 
             {
                 case ReAction.ReactionType.ReAction:
@@ -324,7 +308,7 @@ namespace mkbot
                 Console.WriteLine(ex.Message);
             }
         }
-        static bool Post(string Json)
+        static void Post(string Json)
         {
             try
             {
@@ -336,8 +320,6 @@ namespace mkbot
             {
                 Console.WriteLine(ex.Message);
             }
-            return true;
-
         }
         static void InitAndAddFunction() 
         {
