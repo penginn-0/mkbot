@@ -65,7 +65,7 @@ namespace mkbot
                 var dyna = JsonObject.Parse(json);
                 foreach (var item in dyna)
                 {
-                    var user = new User(item.username,item.Host,(int)item.Love);
+                    var user = new User(item.username,item.Host,(int)item.Love,new List<DateTime>((DateTime[])item.LoveChangedTime));
                     Users.Add(user);
                 }
                 Console.WriteLine("memory loaded");

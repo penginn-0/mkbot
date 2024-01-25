@@ -14,11 +14,12 @@ namespace mkbot
         /// </summary>
         /// <param name="username">@名</param>
         /// <param name="host">ホスト</param>
-        public User(string username, string host, int love)
+        public User(string username, string host, int love,List<DateTime> changetimes)
         {
             this.username = username;
             Host = host;
             Love = love;
+            LoveChangedTime = changetimes;
         }
         /// <summary>
         /// ユーザー登録と初期化
@@ -59,12 +60,52 @@ namespace mkbot
         }
         public void CalcLove(int Unit = LoveUnit)
         {
-            if(LoveMax <= Love||Unit ==0) { return; }
-            Console.WriteLine($"@{username}@{Host}:{Love}=>{Love+Unit}");
-            Love += Unit;
-            var json = JsonSerializer.Serialize(Program.Users);
-            File.WriteAllText("memory.json", json);
+            if (LoveMax <= Love || Unit == 0)
+            {
+                Console.WriteLine($"@{username}@{Host}:{Love}=>{Love}");
+                return;
+            }
+            var change = LoveChangeFlag();
+            if (change||(change ==false && Unit < 0))
+            {
+                Console.WriteLine($"@{username}@{Host}:{Love}=>{Love + Unit}");
+                Love += Unit;
+                LoveChangedTime.Add(DateTime.Now);
+                var json = JsonSerializer.Serialize(Program.Users);
+                File.WriteAllText("memory.json", json);
+            }
+            else
+            {
+                Console.WriteLine($"@{username}@{Host}:{Love}=>{Love}");
+            }
         }
+        private bool LoveChangeFlag()
+        {
+            if(LoveChangedTime.Count > ChangeNumThreshold - 1)
+            {
+                var Flag = 0;
+                foreach (var Time in LoveChangedTime)
+                {
+                    if((DateTime.Now - Time).TotalHours <ChangeTimeThreshold)
+                    {
+                        Flag++;
+                    }
+                }
+                if (Flag >= 3)
+                {
+                    return false;
+                }
+                else 
+                {
+                    LoveChangedTime.RemoveAt(0);
+                    return true;
+                }
+            }
+            return true;
+        }
+        private const int ChangeTimeThreshold = 24;
+        private const int ChangeNumThreshold = 3;
+        public  List<DateTime> LoveChangedTime { get; private set; }
         public string username { get; private set; }
         public string Host { get; private set; }
         public int Love { get; private set; }
