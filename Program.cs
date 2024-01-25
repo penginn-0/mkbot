@@ -20,14 +20,21 @@ namespace mkbot
         static int WaitTimeMS = 1500;
         public static void Main()
         {
-           var conf = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddIniFile("config.ini")
-                .Build().GetSection("APP").Get<Config>();
+            if (!(File.Exists("config.ini")))
+            {
+                Console.WriteLine("Config not exist");
+                return;
+            }
+            var conf = new ConfigurationBuilder()
+                 .SetBasePath(Directory.GetCurrentDirectory())
+                 .AddIniFile("config.ini")
+                 .Build()
+                 .GetSection("APP")
+                 .Get<Config>();
+
             if (conf is null)
             {
                 Console.WriteLine("Config is null");
-                Console.ReadLine();
                 return;
             }
             Cfg = conf;
@@ -53,8 +60,9 @@ namespace mkbot
         {
             if (File.Exists("memory.json"))
             {
+                Console.WriteLine("Loading memory ...");
                 var json = File.ReadAllText("memory.json");
-                var dyna = DynaJson.JsonObject.Parse(json);
+                var dyna = JsonObject.Parse(json);
                 foreach (var item in dyna)
                 {
                     var user = new User(item.username,item.Host,(int)item.Love);
@@ -153,7 +161,7 @@ namespace mkbot
                         username = Body.user.username,
                         Host = Body.user.host
                     };
-                    ReAction Reac = new ReAction();
+                    ReAction Reac = new ();
                     foreach (var Func in funcs)
                     {
                         Reac = Func(Arg);
@@ -203,8 +211,7 @@ namespace mkbot
                     break;
 
                 case "follow":
-                var user = new User();
-                user.Register(Body.username, Body.host);
+                var user = new User(Body.username, Body.host);
                 Users.Add(user);
                 var json = JsonSerializer.Serialize(Users);
                 File.WriteAllText("memory.json", json);

@@ -9,14 +9,25 @@ namespace mkbot
 {
     public class User
     {
+        /// <summary>
+        /// ファイルからの復元用
+        /// </summary>
+        /// <param name="username">@名</param>
+        /// <param name="host">ホスト</param>
         public User(string username, string host, int love)
         {
             this.username = username;
             Host = host;
             Love = love;
         }
-        public User()
+        /// <summary>
+        /// ユーザー登録と初期化
+        /// </summary>
+        /// <param name="username">@名</param>
+        /// <param name="host">ホスト</param>
+        public User(string username, string host)
         {
+            Register(username, host);
         }
         /// <summary>
         /// 最大1000(100)で下1桁が小数点みたいな感じで
@@ -33,7 +44,6 @@ namespace mkbot
         }
         public LoveLevel GetLoveLevel()
         {
-
             return Love switch
             {
                 >LoveThreshold => LoveLevel.Love,
@@ -49,13 +59,8 @@ namespace mkbot
         }
         public void AddLove(int Unit = LoveUnit)
         {
+            if(LoveMax <= Love) { return; }
             this.Love+= Unit;
-            var json = JsonSerializer.Serialize(Program.Users);
-            File.WriteAllText("memory.json", json);
-        }
-        public void SubLove(int Unit = LoveUnit)
-        {
-            this.Love-= Unit;
             var json = JsonSerializer.Serialize(Program.Users);
             File.WriteAllText("memory.json", json);
         }
