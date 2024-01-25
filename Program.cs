@@ -13,7 +13,7 @@ namespace mkbot
         static WebSocket Socket;
         static HttpClient Hc = new();
         static Config Cfg;
-        public static List<User> Users;
+        public static List<User> Users =new ();
         static List<Func<NoteInfo, ReAction?>> funcs =new();
         static System.Timers.Timer timer = new();
         static readonly int WaitTimeMS = 1500;
@@ -154,6 +154,7 @@ namespace mkbot
                 case "note":
                     //Renoteとかの対応
                     if(Body.renoteId != null|| Body.text is null||Body.text == "") { return;}
+                    if(Body.user.username == IuserName && Body.user.host is null) { return; }
                     //dynamic型のためContainsするにはキャストが必要
                     var Text = (string)Body.text;
                     //メンションだったらスルー(メンション時判定があるので二重リアクション回避)
@@ -341,14 +342,93 @@ namespace mkbot
         }
         static void InitAndAddFunction() 
         {
-           funcs =  new();
+           funcs =  new();/*
             var nadenade = new Base(new List<string>() { "なでなで","なでなでしてあげましょうね" },"💞", new List<string>() { "" }, new List<string>() { "ふふん♪" }, new List<string>() { "そ、外ではあまりなでるでない・・・///" },false,"👀",5);
             var koyaaan  = new Base(new List<string>() { "こやーん" }, "🦊", new List<string>() { "" }, new List<string>() { "こやーん" }, new List<string>() { "こやーん" });
+            funcs.Add(nadenade.CheckMessage);
+            funcs.Add(koyaaan.CheckMessage);*/
+            var Args = LoadBaseArgs();
+            if(Args != null && Args.Count > 0)
+            foreach(var Arg in Args)
+            {
+                switch (Arg.MyType)
+                {
+
+                        case BaseArgs.Type.Min:
+                            funcs.Add(new Base(Arg.Min).CheckMessage);
+                            continue;
+                        case BaseArgs.Type.Option0:
+                            funcs.Add(new Base(Arg.Op0).CheckMessage);
+                            continue;
+                        case BaseArgs.Type.Option1:
+                            funcs.Add(new Base(Arg.Op1).CheckMessage); 
+                            continue;
+                        case BaseArgs.Type.Option2:
+                            funcs.Add(new Base(Arg.Op2).CheckMessage);
+                            continue;
+                }
+            }
             var registar = new Registar(new List<string>() { "ふぉろー", "フォロー" }, "", new List<string>() { "" }, new List<string>() { "" }, new List<string>() { "" });
-            funcs.Add(nadenade.CheckMessage);//追加したかったらここの前後に追加する(上に行くほど優先度が高い)
-            funcs.Add(koyaaan.CheckMessage);
-            funcs.Add(registar.CheckMessage);
+            funcs.Add(registar.Check_RegistarMessage);
             funcs.Add(Default.CheckMessage);
+        }
+        static  List<BaseArgs>? LoadBaseArgs() 
+        {
+
+            var json = File.ReadAllText("Option.json");
+            var Args = new List<BaseArgs>();
+            var Dyna = JsonObject.Parse(json);
+            foreach (var Obj in Dyna) 
+            { 
+               var Arg = new BaseArgs();
+                Arg.MyType = (int)Obj.Type switch
+                {
+                    (int)BaseArgs.Type.Min => BaseArgs.Type.Min,
+                    (int)BaseArgs.Type.Option0 => BaseArgs.Type.Option0,
+                    (int)BaseArgs.Type.Option1 => BaseArgs.Type.Option1,
+                    (int)BaseArgs.Type.Option2 => BaseArgs.Type.Option2,
+                    _ => BaseArgs.Type.Min,
+                };
+               var ArgMin = new BaseArgs_Min();
+                ArgMin.Keyword = new List<string>((string[])Obj.Keyword);
+                ArgMin.Emoji = Obj.Emoji;
+                ArgMin.Hate = new List<string>((string[])Obj.Hate);
+                ArgMin.Normal = new List<string>((string[])Obj.Normal);
+                ArgMin.Love = new List<string>((string[])Obj.Love);
+                switch (Arg.MyType)
+                {
+                    case BaseArgs.Type.Min:
+                        Arg.Min = ArgMin;
+                        Args.Add(Arg);
+                        continue;
+                    case BaseArgs.Type.Option0:
+                        var Op0 = new BaseArgsOption0(ArgMin,(int)Obj.Unit);
+                        Arg.Op0 = Op0;
+                        Args.Add(Arg);
+                        continue;
+                    case BaseArgs.Type.Option1:
+                        var Op1 = new BaseArgsOption1(ArgMin, Obj.NotMentionReply,Obj.NotMentionEmoji);
+                        Arg.Op1 = Op1;
+                        Args.Add(Arg);
+                        continue;
+                    case BaseArgs.Type.Option2:
+                        var Op2 = new BaseArgsOption2(ArgMin, Obj.NotMentionReply, Obj.NotMentionEmoji,(int)Obj.Unit);
+                        Arg.Op2 = Op2;
+                        Args.Add(Arg);
+                        continue;
+                }
+            }
+            if (0 < Args.Count) {return Args;}
+            return null;
+        }
+        static List<string> ArrayToList(dynamic Array)
+        {
+          var Ret =new List<string>();
+            foreach (var Str in Array) 
+            { 
+                Ret.Add(Str);
+            }
+            return Ret;
         }
     }
     public class Connect_Rootobject
@@ -373,4 +453,73 @@ namespace mkbot
 
         public string InitMessage { get; set; }
     }
-}
+    public class BaseArgs
+    {
+        public enum Type
+        {
+            Min = -1,
+            Option0 = 0,
+            Option1 = 1,
+            Option2 = 2,
+        }
+        public Type MyType { get; set; }
+        public BaseArgs_Min Min { get; set; }
+        public BaseArgsOption0 Op0 { get; set; }
+        public BaseArgsOption1 Op1 { get; set; }
+        public BaseArgsOption2 Op2 { get; set; }
+    }
+    }
+    public class BaseArgs_Min
+    {
+        public  List<string> Keyword { get; set;}
+        public string Emoji { get; set; }
+        public List<string> Hate { get; set; }
+        public List<string> Normal { get; set; }
+        public List<string> Love { get; set; }
+    }
+    public class BaseArgsOption0 : BaseArgs_Min
+    {
+        public BaseArgsOption0(BaseArgs_Min Min,int Unit) 
+        {
+           Keyword  = Min.Keyword;
+           Emoji = Min.Emoji;
+           Hate = Min.Hate;
+           Normal = Min.Normal;
+           Love = Min.Love;
+           this.Unit =Unit;
+        }
+        public int Unit { get; set; }
+    }
+    public class BaseArgsOption1 : BaseArgs_Min
+{
+    public BaseArgsOption1(BaseArgs_Min Min,bool Reply,string Emoji2)
+    {
+        Keyword = Min.Keyword;
+        Emoji = Min.Emoji;
+        Hate = Min.Hate;
+        Normal = Min.Normal;
+        Love = Min.Love;
+        NotMentionReply = Reply;
+        NotMentionEmoji = Emoji2;
+    }
+    public bool NotMentionReply { get; set; }
+        public string NotMentionEmoji { get; set; }
+    }
+    public class BaseArgsOption2 : BaseArgs_Min
+{
+    public BaseArgsOption2(BaseArgs_Min Min, bool Reply, string Emoji2, int Unit)
+    {
+        Keyword = Min.Keyword;
+        Emoji = Min.Emoji;
+        Hate = Min.Hate;
+        Normal = Min.Normal;
+        Love = Min.Love;
+        NotMentionReply = Reply;
+        NotMentionEmoji = Emoji2;
+        this.Unit=Unit;
+    }
+    public bool NotMentionReply { get; set; }
+        public string NotMentionEmoji { get; set; }
+        public int Unit { get; set; }
+    }
+

@@ -11,7 +11,7 @@ namespace mkbot.ReActions
         public Registar(List<string> keyword, string emoji, List<string> Hate, List<string> Normal, List<string> Love) : base(keyword, emoji, Hate, Normal, Love)
         {
         }
-        public ReAction? Check_Message(NoteInfo note)
+        public ReAction? Check_RegistarMessage(NoteInfo note)
         {
             if (note.IsNotMention == true) { return null; }
 

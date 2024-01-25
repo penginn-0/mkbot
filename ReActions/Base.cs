@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using mkbot;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
 namespace mkbot.ReActions
 {
     internal class Base
@@ -30,6 +32,50 @@ namespace mkbot.ReActions
             this.NotMentionReply = NotMentionReply;
             this.NotMentionEmoji = NotMentionEmoji;
             this.Unit = Unit;
+        }
+        public Base(BaseArgs_Min Min)
+        {
+            Keyword = Min.Keyword;
+            Emoji = Min.Emoji;
+            Reply_Hate = Min.Hate;
+            Reply_Normal = Min.Normal;
+            Reply_Love = Min.Love;
+            NotMentionReply = false;
+            NotMentionEmoji = "none";
+            Unit = User.LoveUnit;
+        }
+        public Base(BaseArgsOption0 Op0)
+        {
+            Keyword = Op0.Keyword;
+            Emoji = Op0.Emoji;
+            Reply_Hate = Op0.Hate;
+            Reply_Normal = Op0.Normal;
+            Reply_Love = Op0.Love;
+            NotMentionReply = false;
+            NotMentionEmoji = "none";
+            Unit = Op0.Unit;
+        }
+        public Base(BaseArgsOption1 Op1)
+        {
+            Keyword = Op1.Keyword;
+            Emoji = Op1.Emoji;
+            Reply_Hate = Op1.Hate;
+            Reply_Normal = Op1.Normal;
+            Reply_Love = Op1.Love;
+            NotMentionReply = Op1.NotMentionReply;
+            NotMentionEmoji = Op1.NotMentionEmoji;
+            Unit = User.LoveUnit;
+        }
+        public Base(BaseArgsOption2 Op2)
+        {
+            Keyword = Op2.Keyword;
+            Emoji = Op2.Emoji;
+            Reply_Hate = Op2.Hate;
+            Reply_Normal = Op2.Normal;
+            Reply_Love = Op2.Love;
+            NotMentionReply = Op2.NotMentionReply;
+            NotMentionEmoji = Op2.NotMentionEmoji;
+            Unit = Op2.Unit;
         }
         private readonly int Unit;
         public readonly List<string>  Keyword;
@@ -64,7 +110,6 @@ namespace mkbot.ReActions
                         nId = note.nId
                     };
                 }
-                user.CalcLove(Unit);
                 var Reply = user.GetLoveLevel() switch
                 {
                     User.LoveLevel.Hate => Reply_Hate[new Random().Next(Reply_Hate.Count)],
@@ -79,7 +124,7 @@ namespace mkbot.ReActions
                     if (NotMentionReply)
                     {
                     }
-                    else 
+                    else
                     {
                         type = type switch
                         {
@@ -90,6 +135,10 @@ namespace mkbot.ReActions
                         if (NotMentionEmoji == "none") { return null; }
                         Emoji = NotMentionEmoji;
                     }
+                }
+                if (type != ReAction.ReactionType.none) 
+                {//リアクションか返信をするときのみ親密度を変動させる
+                    user.CalcLove(Unit); 
                 }
                 return new ReAction()
                 {

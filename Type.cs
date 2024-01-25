@@ -59,8 +59,9 @@ namespace mkbot
         }
         public void CalcLove(int Unit = LoveUnit)
         {
-            if(LoveMax <= Love) { return; }
-            this.Love += Unit;
+            if(LoveMax <= Love||Unit ==0) { return; }
+            Console.WriteLine($"@{username}@{Host}:{Love}=>{Love+Unit}");
+            Love += Unit;
             var json = JsonSerializer.Serialize(Program.Users);
             File.WriteAllText("memory.json", json);
         }
