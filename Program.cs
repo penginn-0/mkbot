@@ -342,11 +342,7 @@ namespace mkbot
         }
         static void InitAndAddFunction() 
         {
-           funcs =  new();/*
-            var nadenade = new Base(new List<string>() { "なでなで","なでなでしてあげましょうね" },"💞", new List<string>() { "" }, new List<string>() { "ふふん♪" }, new List<string>() { "そ、外ではあまりなでるでない・・・///" },false,"👀",5);
-            var koyaaan  = new Base(new List<string>() { "こやーん" }, "🦊", new List<string>() { "" }, new List<string>() { "こやーん" }, new List<string>() { "こやーん" });
-            funcs.Add(nadenade.CheckMessage);
-            funcs.Add(koyaaan.CheckMessage);*/
+           funcs =  new();
             var Args = LoadBaseArgs();
             if(Args != null && Args.Count > 0)
             foreach(var Arg in Args)
