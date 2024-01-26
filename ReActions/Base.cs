@@ -85,7 +85,7 @@ namespace mkbot.ReActions
         public readonly List<string> Reply_Love;
         public readonly bool NotMentionReply;
         public readonly string NotMentionEmoji;
-        public bool CheckMessage(string Text)
+        public bool CheckKeyword(string Text)
         {
             foreach (var word in Keyword)
             {
@@ -98,7 +98,7 @@ namespace mkbot.ReActions
         }
         public ReAction? CheckMessage(NoteInfo note)
         {
-            if (CheckMessage(note.Text))
+            if (CheckKeyword(note.Text))
             {
                 var user = mkbot.Program.Users.Where(x => x.username == note.username && x.Host == note.Host).FirstOrDefault();
                 if (user is null)

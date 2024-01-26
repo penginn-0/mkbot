@@ -366,7 +366,7 @@ namespace mkbot
             }
             var registar = new Registar(new List<string>() { "ふぉろー", "フォロー" }, "", new List<string>() { "" }, new List<string>() { "" }, new List<string>() { "" });
             funcs.Add(registar.Check_RegistarMessage);
-            funcs.Add(Default.CheckMessage);
+            funcs.Add(Default.GetReaction);
         }
         static  List<BaseArgs>? LoadBaseArgs() 
         {

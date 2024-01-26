@@ -12,7 +12,7 @@ namespace mkbot.ReActions
         public Default(List<string> keyword, string emoji, List<string> Hate, List<string> Normal, List<string> Love, bool NotMentionReply,string NotMentionEmoji) : base(keyword, emoji, Hate, Normal, Love, NotMentionReply,NotMentionEmoji)
         {
         }
-        public static ReAction CheckMessage(NoteInfo note)
+        public static ReAction? GetReaction(NoteInfo note)
         {
             if (note.IsNotMention) { return null; }
             return new ReAction()
