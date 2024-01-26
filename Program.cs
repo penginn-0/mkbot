@@ -62,7 +62,7 @@ namespace mkbot
                     visibility = "followers"
                 }));
 #else
-            Post("notes/create", JsonSerializer.Serialize(new Notes_Create()
+            Post("notes/create", JsonSerializer.Serialize(new Notes_Create_2()
             {
                 i = Cfg.token,
                 text =  Cfg.InitedPost
