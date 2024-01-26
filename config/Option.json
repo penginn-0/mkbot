@@ -1,0 +1,122 @@
+[
+  {
+    "Type": -1,
+    "Keyword": [
+      "aaa",
+      "bbb"
+    ],
+    "Emoji": [ "🍮", "🍰", "🍓" ],
+    "MentionReply": {
+      "Hate": [
+        "H1",
+        "H2"
+      ],
+      "Normal": [
+        "N1",
+        "N2"
+      ],
+      "Love": [
+        "L1",
+        "L2"
+      ]
+    }
+  },
+  {
+    "Type": 0,
+    "Keyword": [
+      "ccc",
+      "ddd"
+    ],
+    "Emoji": [ "🍮", "🍰", "🍓" ],
+    "MentionReply": {
+      "Hate": [
+        "H1",
+        "H2"
+      ],
+      "Normal": [
+        "N1",
+        "N2"
+      ],
+      "Love": [
+        "L1",
+        "L2"
+      ]
+    },
+    "Unit": [-15,0,20]
+  },
+  {
+    "Type": 1,
+    "Keyword": [
+      "eee",
+      "fff"
+    ],
+    "Emoji": [ "🍮", "🍰", "🍓" ],
+    "MentionReply": {
+      "Hate": [
+        "H1",
+        "H2"
+      ],
+      "Normal": [
+        "N1",
+        "N2"
+      ],
+      "Love": [
+        "L1",
+        "L2"
+      ]
+    },
+    "NotMentionReply": {
+      "Hate": [
+        "RH1",
+        "RH2"
+      ],
+      "Normal": [
+        "RN1",
+        "N2"
+      ],
+      "Love": [
+        "RL1",
+        "RL2"
+      ]
+    },
+    "NotMentionEmoji": [ "⭐", "🍵", "☕" ]
+  },
+  {
+    "Type": 2,
+    "Keyword": [
+      "ggg",
+      "hhh"
+    ],
+    "Emoji": [ "🍮", "🍰", "🍓" ],
+    "MentionReply": {
+      "Hate": [
+        "H1",
+        "H2"
+      ],
+      "Normal": [
+        "N1",
+        "N2"
+      ],
+      "Love": [
+        "L1",
+        "L2"
+      ]
+    },
+    "NotMentionReply":{
+      "Hate": [
+        "RH1",
+        "RH2"
+      ],
+      "Normal": [
+        "RN1",
+        "N2"
+      ],
+      "Love": [
+        "RL1",
+        "RL2"
+      ]
+    },
+    "NotMentionEmoji": [ "⭐", "🍵", "☕" ],
+    "Unit": [ -15, 0, 20 ]
+  }
+]

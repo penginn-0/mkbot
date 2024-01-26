@@ -34,9 +34,12 @@ namespace mkbot
         /// 最大1000(100)で下1桁が小数点みたいな感じで
         /// </summary>
         const int LoveMax = 1000;
-        public const int LoveUnit = 10;
-        const int LoveThreshold =  500;
-        const int HateThreshold = -150;
+        public const int LoveUnit0 = -10;
+        public const int LoveUnit1 = 10;
+        public const int LoveUnit2 = 5;
+        public readonly List<int> LoveUnits = (new (new int[3] {-10,10,5 }));
+        const int LoveThreshold =  750;
+        const int HateThreshold = -100;
         public enum LoveLevel
         {
             Hate,
@@ -58,7 +61,7 @@ namespace mkbot
             Host = host;
             Love = 0;
         }
-        public void CalcLove(int Unit = LoveUnit)
+        public void CalcLove(int Unit )
         {
             if (LoveMax <= Love || Unit == 0)
             {
@@ -72,7 +75,7 @@ namespace mkbot
                 Love += Unit;
                 LoveChangedTime.Add(DateTime.Now);
                 var json = JsonSerializer.Serialize(Program.Users);
-                File.WriteAllText("memory.json", json);
+                File.WriteAllText(@"config\memory.json", json);
             }
             else
             {

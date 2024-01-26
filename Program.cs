@@ -24,14 +24,14 @@ namespace mkbot
         static readonly int WaitTimeMS = 1500;
         public static void Main()
         {
-            if (!(File.Exists("config.ini")))
+            if (!(File.Exists(@"config\config.ini")))
             {
                 Console.WriteLine("Config not exist");
                 return;
             }
             var conf = new ConfigurationBuilder()
                  .SetBasePath(Directory.GetCurrentDirectory())
-                 .AddIniFile("config.ini")
+                 .AddIniFile(@"config\config.ini")
                  .Build()
                  .GetSection("APP")
                  .Get<Config>();
@@ -84,10 +84,10 @@ namespace mkbot
         }
         static void LoadPostMessages()
         {
-            if (File.Exists("posts.json"))
+            if (File.Exists(@"config\posts.json"))
             {
                 Console.WriteLine("Loading posts...");
-                var json = File.ReadAllText("posts.json");
+                var json = File.ReadAllText(@"config\posts.json");
                 var Dyna = JsonObject.Parse(json);
                 PostStrings = new((string[])Dyna.Messges);
                 Console.WriteLine($"posts loaded\r\nPostStringsCount:{PostStrings.Count}");
@@ -151,10 +151,10 @@ namespace mkbot
         }
         static void LoadMemory()
         {
-            if (File.Exists("memory.json"))
+            if (File.Exists(@"config\memory.json"))
             {
                 Console.WriteLine("Loading memory...");
-                var json = File.ReadAllText("memory.json");
+                var json = File.ReadAllText(@"config\memory.json");
                 var dyna = JsonObject.Parse(json);
                 foreach (var item in dyna)
                 {
@@ -313,12 +313,12 @@ namespace mkbot
                         break;
                 }
                     break;
-
+                        
                 case "follow":
                 var user = new User(Body.username, Body.host);
                 Users.Add(user);
                 var json = JsonSerializer.Serialize(Users);
-                File.WriteAllText("memory.json", json);
+                File.WriteAllText(@"config\memory.json", json);
                 Console.WriteLine($"followed:@{Body.username}@{Body.host}");
                 break;
             }
@@ -461,31 +461,23 @@ namespace mkbot
             if(Args != null && Args.Count > 0)
             foreach(var Arg in Args)
             {
-                switch (Arg.MyType)
+                funcs.Add(Arg.MyType switch
                 {
-
-                        case BaseArgs.Type.Min:
-                            funcs.Add(new Base(Arg.Min).CheckMessage);
-                            continue;
-                        case BaseArgs.Type.Option0:
-                            funcs.Add(new Base(Arg.Op0).CheckMessage);
-                            continue;
-                        case BaseArgs.Type.Option1:
-                            funcs.Add(new Base(Arg.Op1).CheckMessage); 
-                            continue;
-                        case BaseArgs.Type.Option2:
-                            funcs.Add(new Base(Arg.Op2).CheckMessage);
-                            continue;
-                }
+                   BaseArgs.Type.Min     => new Base(Arg.Min).CheckMessage,
+                   BaseArgs.Type.Option0 => new Base(Arg.Op0).CheckMessage,
+                   BaseArgs.Type.Option1 => new Base(Arg.Op1).CheckMessage, 
+                   BaseArgs.Type.Option2 => new Base(Arg.Op2).CheckMessage,
+                   _ => throw new Exception("InvalidType")
+                });
             }
-            var registar = new Registar(new List<string>() { "ふぉろー", "フォロー" }, "", new List<string>() { "" }, new List<string>() { "" }, new List<string>() { "" });
+            var registar = new Registar(new List<string>() { "ふぉろー", "フォロー" });
             funcs.Add(registar.Check_RegistarMessage);
             funcs.Add(Default.GetReaction);
         }
         static  List<BaseArgs>? LoadBaseArgs() 
         {
 
-            var json = File.ReadAllText("Option.json");
+            var json = File.ReadAllText(@"config\Option.json");
             var Args = new List<BaseArgs>();
             var Dyna = JsonObject.Parse(json);
             foreach (var Obj in Dyna) 
@@ -504,10 +496,10 @@ namespace mkbot
                 var ArgMin = new BaseArgs_Min
                 {
                     Keyword = new List<string>((string[])Obj.Keyword),
-                    Emoji = Obj.Emoji,
-                    Hate = new List<string>((string[])Obj.Hate),
-                    Normal = new List<string>((string[])Obj.Normal),
-                    Love = new List<string>((string[])Obj.Love)
+                    Emoji = new List<string>((string[]) Obj.Emoji),
+                    Hate = new List<string>((string[])Obj.MentionReply.Hate),
+                    Normal = new List<string>((string[])Obj.MentionReply.Normal),
+                    Love = new List<string>((string[])Obj.MentionReply.Love)
                 };
                 switch (Arg.MyType)
                 {
@@ -516,23 +508,29 @@ namespace mkbot
                         Args.Add(Arg);
                         continue;
                     case BaseArgs.Type.Option0:
-                        var Op0 = new BaseArgsOption0(ArgMin,(int)Obj.Unit);
+                        var Op0 = new BaseArgsOption0(ArgMin, new List<int>((int[])Obj.Unit));
                         Arg.Op0 = Op0;
                         Args.Add(Arg);
                         continue;
                     case BaseArgs.Type.Option1:
-                        var Op1 = new BaseArgsOption1(ArgMin, Obj.NotMentionReply,Obj.NotMentionEmoji);
+                        var replys = Obj.NotMentionReply;
+                        var Op1 = new BaseArgsOption1(ArgMin, new List<string>((string[])replys.Hate), new List<string>((string[])replys.Normal), new List<string>((string[])replys.Love), new List<string>((string[])Obj.NotMentionEmoji));
                         Arg.Op1 = Op1;
                         Args.Add(Arg);
                         continue;
                     case BaseArgs.Type.Option2:
-                        var Op2 = new BaseArgsOption2(ArgMin, Obj.NotMentionReply, Obj.NotMentionEmoji,(int)Obj.Unit);
+                        replys = Obj.NotMentionReply;
+                        var Op2 = new BaseArgsOption2(ArgMin, new List<string>((string[])replys.Hate), new List<string>((string[])replys.Normal), new List<string>((string[])replys.Love), new List<string>((string[])Obj.NotMentionEmoji), new List<int>((int[])Obj.Unit));
                         Arg.Op2 = Op2;
                         Args.Add(Arg);
                         continue;
                 }
             }
-            if (0 < Args.Count) {return Args;}
+            if (0 < Args.Count) 
+            {
+                Console.WriteLine($"OptionCount:{Args.Count}");
+                return Args;
+            }
             return null;
         }
         static List<string> ArrayToList(dynamic Array)
@@ -590,14 +588,14 @@ namespace mkbot
     public class BaseArgs_Min
     {
         public  List<string> Keyword { get; set;}
-        public string Emoji { get; set; }
+        public List<string> Emoji { get; set; }
         public List<string> Hate { get; set; }
         public List<string> Normal { get; set; }
         public List<string> Love { get; set; }
     }
     public class BaseArgsOption0 : BaseArgs_Min
     {
-        public BaseArgsOption0(BaseArgs_Min Min,int Unit) 
+        public BaseArgsOption0(BaseArgs_Min Min,List<int> Unit) 
         {
            Keyword  = Min.Keyword;
            Emoji = Min.Emoji;
@@ -606,38 +604,46 @@ namespace mkbot
            Love = Min.Love;
            this.Unit =Unit;
         }
-        public int Unit { get; set; }
+        public List<int> Unit { get; set; }
     }
     public class BaseArgsOption1 : BaseArgs_Min
 {
-    public BaseArgsOption1(BaseArgs_Min Min,bool Reply,string Emoji2)
+    public BaseArgsOption1(BaseArgs_Min Min, List<string> NotMentionHate, List<string> NotMentionNormal, List<string> NotMentionLove, List<string> Emoji2)
     {
         Keyword = Min.Keyword;
         Emoji = Min.Emoji;
         Hate = Min.Hate;
         Normal = Min.Normal;
         Love = Min.Love;
-        NotMentionReply = Reply;
+        this.NotMentionHate = NotMentionHate;
+        this.NotMentionNormal = NotMentionNormal;
+        this.NotMentionLove = NotMentionLove;
         NotMentionEmoji = Emoji2;
     }
-    public bool NotMentionReply { get; set; }
-        public string NotMentionEmoji { get; set; }
+    public List<string> NotMentionHate { get; set; }
+    public List<string> NotMentionNormal { get; set; }
+    public List<string> NotMentionLove { get; set; }
+    public List<string> NotMentionEmoji { get; set; }
     }
     public class BaseArgsOption2 : BaseArgs_Min
 {
-    public BaseArgsOption2(BaseArgs_Min Min, bool Reply, string Emoji2, int Unit)
+    public BaseArgsOption2(BaseArgs_Min Min, List<string> NotMentionHate, List<string> NotMentionNormal, List<string> NotMentionLove, List<string> Emoji2, List<int> Unit)
     {
         Keyword = Min.Keyword;
         Emoji = Min.Emoji;
         Hate = Min.Hate;
         Normal = Min.Normal;
         Love = Min.Love;
-        NotMentionReply = Reply;
+        this.NotMentionHate = NotMentionHate;
+        this.NotMentionNormal = NotMentionNormal;
+        this.NotMentionLove = NotMentionLove;
         NotMentionEmoji = Emoji2;
         this.Unit=Unit;
     }
-    public bool NotMentionReply { get; set; }
-        public string NotMentionEmoji { get; set; }
-        public int Unit { get; set; }
+    public List<string> NotMentionHate { get; set; }
+    public List<string> NotMentionNormal { get; set; }
+    public List<string> NotMentionLove { get; set; }
+    public List<string> NotMentionEmoji { get; set; }
+    public List<int> Unit { get; set; }
     }
 

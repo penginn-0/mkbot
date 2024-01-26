@@ -9,7 +9,7 @@ namespace mkbot.ReActions
 {
     internal class Default:Base
     {
-        public Default(List<string> keyword, string emoji, List<string> Hate, List<string> Normal, List<string> Love, bool NotMentionReply,string NotMentionEmoji) : base(keyword, emoji, Hate, Normal, Love, NotMentionReply,NotMentionEmoji)
+        public Default()
         {
         }
         public static ReAction? GetReaction(NoteInfo note)

@@ -8,7 +8,7 @@ namespace mkbot.ReActions
 {
     internal class Registar :Base
     {
-        public Registar(List<string> keyword, string emoji, List<string> Hate, List<string> Normal, List<string> Love) : base(keyword, emoji, Hate, Normal, Love)
+        public Registar(List<string> keyword) : base(keyword)
         {
         }
         public ReAction? Check_RegistarMessage(NoteInfo note)
