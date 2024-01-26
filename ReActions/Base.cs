@@ -134,6 +134,17 @@ namespace mkbot.ReActions
                 {//リアクションか返信をするときのみ親密度を変動させる
                     user.CalcLove(Unit[(int)user.GetLoveLevel()]); 
                 }
+                if(Reply == "")
+                {
+                    if(Emoji == "")
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        type = ReAction.ReactionType.ReAction;
+                    }
+                }
                 return new ReAction()
                 {
                     Type = type,
