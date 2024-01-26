@@ -160,6 +160,12 @@ namespace mkbot
         public string[] visibleUserIds { get; set; }
         public string replyId { get; set; }
     }
+    public class Notes_Create_2
+    {
+        public string i { get; set; }
+        public string text { get; set; }
+        public string visibility { get; set; }
+    }
     public class Following_Create
     {
         public string i { get; set; }

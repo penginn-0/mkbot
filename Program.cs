@@ -4,6 +4,9 @@ using System.Text.Json;
 using WebSocket4Net;
 using DynaJson;
 using mkbot.ReActions;
+using System.Linq.Expressions;
+using System.Timers;
+
 namespace mkbot
 {
 
@@ -16,6 +19,8 @@ namespace mkbot
         public static List<User> Users =new ();
         static List<Func<NoteInfo, ReAction?>> funcs =new();
         static System.Timers.Timer timer = new();
+        static System.Timers.Timer Posttimer = new();
+        public static List<string> PostStrings = new();
         static readonly int WaitTimeMS = 1500;
         public static void Main()
         {
@@ -37,12 +42,33 @@ namespace mkbot
                 return;
             }
             Cfg = conf;
+            if(Cfg.UsePost)
+            {
+                LoadPostMessages();
+            }
             LoadMemory();
             InitAndAddFunction();
             if (Check_I())
             {
                 Console.WriteLine(Cfg.InitMessage.Replace("<r>", "\r\n"));
                 InitSoclket();
+                if(Cfg.InitedPost != "") 
+                { 
+#if DEBUG
+                Post("notes/create", JsonSerializer.Serialize(new Notes_Create_2()
+                {
+                    i = Cfg.token,
+                    text = Cfg.InitedPost,
+                    visibility = "followers"
+                }));
+#else
+            Post("notes/create", JsonSerializer.Serialize(new Notes_Create()
+            {
+                i = Cfg.token,
+                text =  Cfg.InitedPost
+            }));
+#endif
+                }
                 while (true)
                 {
                     var key = Console.ReadKey();
@@ -56,6 +82,73 @@ namespace mkbot
             }
 
         }
+        static void LoadPostMessages()
+        {
+            if (File.Exists("posts.json"))
+            {
+                Console.WriteLine("Loading posts...");
+                var json = File.ReadAllText("posts.json");
+                var Dyna = JsonObject.Parse(json);
+                PostStrings = new((string[])Dyna.Messges);
+                Console.WriteLine($"posts loaded\r\nPostStringsCount:{PostStrings.Count}");
+                if(PostStrings.Count>0)
+                {
+                    if (Cfg.PostIntervalMinute ==-1)
+                    {
+                        Posttimer.Elapsed += PostMessageIntervalRand;
+                        Posttimer.Interval = (new Random().Next(Cfg.PostIntervalRandomMinuteMin, Cfg.PostIntervalRandomMinuteMax) * 60000);
+                        Console.WriteLine($"NextPostinterval:{Posttimer.Interval / 60000}");
+                    }
+                    else 
+                    {
+                        Posttimer.Elapsed += PostMessage;
+                        Posttimer.Interval = (Cfg.PostIntervalMinute * 60000);
+                        Console.WriteLine($"Postinterval:{Posttimer.Interval / 60000}");
+                    }
+                    Posttimer.Enabled = true;
+                }
+            }
+            else
+            {
+                Console.WriteLine("posts not found");
+            }
+        }
+        static void PostMessage(object? sender, ElapsedEventArgs e)
+        {
+#if DEBUG
+            Post("notes/create", JsonSerializer.Serialize(new Notes_Create_2()
+            {
+                i = Cfg.token,
+                text = PostStrings[new Random().Next(PostStrings.Count)],
+                visibility = "followers"
+            }));
+#else
+            Post("notes/create", JsonSerializer.Serialize(new Notes_Create()
+            {
+                i = Cfg.token,
+                text = PostStrings[new Random().Next(PostStrings.Count)]
+            }));
+#endif
+        }
+        static void PostMessageIntervalRand(object? sender, ElapsedEventArgs e)
+        {
+#if DEBUG
+            Post("notes/create", JsonSerializer.Serialize(new Notes_Create_2()
+            {
+                i = Cfg.token,
+                text = PostStrings[new Random().Next(PostStrings.Count)],
+               visibility = "followers"
+            }));
+#else
+            Post("notes/create", JsonSerializer.Serialize(new Notes_Create()
+            {
+                i = Cfg.token,
+                text = PostStrings[new Random().Next(PostStrings.Count)]
+            }));
+#endif
+            Posttimer.Interval = (new Random().Next(Cfg.PostIntervalRandomMinuteMin,Cfg.PostIntervalRandomMinuteMax)*60000);
+            Console.WriteLine($"NextPostinterval:{Posttimer.Interval / 60000}");
+        }
         static void LoadMemory()
         {
             if (File.Exists("memory.json"))
@@ -68,7 +161,7 @@ namespace mkbot
                     var user = new User(item.username,item.Host,(int)item.Love,new List<DateTime>((DateTime[])item.LoveChangedTime));
                     Users.Add(user);
                 }
-                Console.WriteLine("memory loaded");
+                Console.WriteLine($"memory loaded\r\nUserCount:{Users.Count}");
             }
             else
             {
@@ -139,13 +232,13 @@ namespace mkbot
             };
             Socket.Open();
         }
-        static void Socket_MessageReceived(object sender, MessageReceivedEventArgs e)
+        static void Socket_MessageReceived(object? sender, MessageReceivedEventArgs e)
         {
             Console.WriteLine("\r\nDataReceived=" + DateTime.Now);
 #if DEBUG
             Console.WriteLine(e.Message);
 #endif
-            var dyna = DynaJson.JsonObject.Parse(e.Message);
+            var dyna = JsonObject.Parse(e.Message);
             Console.WriteLine("type:" + dyna.type);
             Console.WriteLine("bodytype:" + dyna.body.type);
             var Body =dyna.body.body;
@@ -230,7 +323,7 @@ namespace mkbot
                 break;
             }
         }
-        static void Socket_Reconnect(object sender, EventArgs e)
+        static void Socket_Reconnect(object? sender, EventArgs e)
         {
             if (Socket.State == WebSocketState.Closed)
             {
@@ -320,7 +413,17 @@ namespace mkbot
                 var Content = new StringContent(Json, Encoding.UTF8, @"application/json");
                 var res = Hc.PostAsync($"https://{Cfg.host}/api/{EndPoint}", Content).Result;
                 var Ret = res.Content.ReadAsStringAsync().Result;
-                Console.WriteLine(Ret);
+                if(res.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    Console.WriteLine($"endpoint:{EndPoint},statuscode:{res.StatusCode}");
+                }
+                else 
+                {
+                    Console.WriteLine($"endpoint:{EndPoint},statuscode:{res.StatusCode}\r\n{Ret}");
+                }
+#if DEBUG
+                Console.WriteLine(Ret+"\r\n");
+#endif
             }
             catch (Exception ex)
             {
@@ -332,8 +435,19 @@ namespace mkbot
             try
             {
                 var Content = new StringContent(Json, Encoding.UTF8, @"application/json");
-                var res = Hc.PostAsync($"https://{Cfg.host}/api/following/create", Content);
-                var json =res.Result.Content.ReadAsStringAsync();
+                var res = Hc.PostAsync($"https://{Cfg.host}/api/following/create", Content).Result;
+                var Ret = res.Content.ReadAsStringAsync().Result;
+                if (res.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    Console.WriteLine($"endpoint:following/create,statuscode:{res.StatusCode}");
+                }
+                else
+                {
+                    Console.WriteLine($"endpoint:following/create,statuscode:{res.StatusCode}+\r\n{Ret}");
+                }
+#if DEBUG
+                Console.WriteLine(Ret + "\r\n");
+#endif
             }
             catch (Exception ex)
             {
@@ -375,22 +489,26 @@ namespace mkbot
             var Args = new List<BaseArgs>();
             var Dyna = JsonObject.Parse(json);
             foreach (var Obj in Dyna) 
-            { 
-               var Arg = new BaseArgs();
-                Arg.MyType = (int)Obj.Type switch
+            {
+                var Arg = new BaseArgs
                 {
-                    (int)BaseArgs.Type.Min => BaseArgs.Type.Min,
-                    (int)BaseArgs.Type.Option0 => BaseArgs.Type.Option0,
-                    (int)BaseArgs.Type.Option1 => BaseArgs.Type.Option1,
-                    (int)BaseArgs.Type.Option2 => BaseArgs.Type.Option2,
-                    _ => BaseArgs.Type.Min,
+                    MyType = (int)Obj.Type switch
+                    {
+                        (int)BaseArgs.Type.Min => BaseArgs.Type.Min,
+                        (int)BaseArgs.Type.Option0 => BaseArgs.Type.Option0,
+                        (int)BaseArgs.Type.Option1 => BaseArgs.Type.Option1,
+                        (int)BaseArgs.Type.Option2 => BaseArgs.Type.Option2,
+                        _ => BaseArgs.Type.Min,
+                    }
                 };
-               var ArgMin = new BaseArgs_Min();
-                ArgMin.Keyword = new List<string>((string[])Obj.Keyword);
-                ArgMin.Emoji = Obj.Emoji;
-                ArgMin.Hate = new List<string>((string[])Obj.Hate);
-                ArgMin.Normal = new List<string>((string[])Obj.Normal);
-                ArgMin.Love = new List<string>((string[])Obj.Love);
+                var ArgMin = new BaseArgs_Min
+                {
+                    Keyword = new List<string>((string[])Obj.Keyword),
+                    Emoji = Obj.Emoji,
+                    Hate = new List<string>((string[])Obj.Hate),
+                    Normal = new List<string>((string[])Obj.Normal),
+                    Love = new List<string>((string[])Obj.Love)
+                };
                 switch (Arg.MyType)
                 {
                     case BaseArgs.Type.Min:
@@ -446,8 +564,12 @@ namespace mkbot
     {
         public string host { get; set; }
         public string token { get; set; }
-
         public string InitMessage { get; set; }
+        public string InitedPost { get; set; }
+        public bool UsePost { get; set ; }
+        public int PostIntervalMinute { get; set; }
+        public int PostIntervalRandomMinuteMin { get; set; }
+        public int PostIntervalRandomMinuteMax { get; set; }
     }
     public class BaseArgs
     {

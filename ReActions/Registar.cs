@@ -15,9 +15,9 @@ namespace mkbot.ReActions
         {
             if (note.IsNotMention == true) { return null; }
 
-            if (base.CheckMessage(note.Text))
+            if (base.CheckKeyword(note.Text))
             {
-                var user = mkbot.Program.Users.Where(x => x.username == note.username && x.Host == note.Host).FirstOrDefault();
+                var user = Program.Users.Where(x => x.username == note.username && x.Host == note.Host).FirstOrDefault();
                 if (user is null)
                 {
                     return new ReAction()
