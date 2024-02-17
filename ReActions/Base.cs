@@ -150,7 +150,7 @@ namespace mkbot.ReActions
                     Type = type,
                     nId = note.nId,
                     Emoji = Emoji,
-                    Text = $"@{note.username}@{note.Host}\r" + Reply,
+                    Text = $"@{note.username}"+$"{note.Host switch { null =>"",_ =>"@"+note.Host}}\r" + Reply,
                     Visibility = note.Visibility,
                     visibleUserIds = new string[1] { note.uId }
                 };

@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <None Update="config\Option.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="config\posts.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
