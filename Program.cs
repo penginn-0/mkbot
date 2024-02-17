@@ -247,7 +247,8 @@ namespace mkbot
                 case "note":
                     //Renoteとかの対応
                     if(Body.renoteId != null|| Body.text is null||Body.text == "") { return;}
-                    if(Body.user.username == IuserName && Body.user.host is null) { return; }
+                    //自分の投稿だったらスルー。ID比較の方が良くない?
+                    if (Body.user.username == IuserName && Body.user.host is null) { return; }
                     //dynamic型のためContainsするにはキャストが必要
                     var Text = (string)Body.text;
                     //メンションだったらスルー(メンション時判定があるので二重リアクション回避)
