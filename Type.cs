@@ -60,6 +60,7 @@ namespace mkbot
             this.username = username;
             Host = host;
             Love = 0;
+            LoveChangedTime = new List<DateTime>();
         }
         public void CalcLove(int Unit )
         {

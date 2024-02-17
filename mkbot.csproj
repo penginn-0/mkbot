@@ -17,4 +17,13 @@
     <PackageReference Include="WebSocket4Net" Version="0.15.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="config\Option.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="config\posts.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
