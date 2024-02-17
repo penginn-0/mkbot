@@ -52,7 +52,7 @@ namespace mkbot
             {
                 Console.WriteLine(Cfg.InitMessage.Replace("<r>", "\r\n"));
                 InitSoclket();
-                if(Cfg.InitedPost != "") 
+                if(Cfg.InitedPost != ""&& Cfg.InitedPost != null) 
                 { 
 #if DEBUG
                 Post("notes/create", JsonSerializer.Serialize(new Notes_Create_2()
