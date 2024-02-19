@@ -240,13 +240,14 @@ namespace mkbot
 #endif
             var dyna = JsonObject.Parse(e.Message);
             Console.WriteLine("type:" + dyna.type);
-            Console.WriteLine("bodytype:" + dyna.body.type);
             var Body =dyna.body.body;
             switch (dyna.body.type)
             {
                 case "note":
+                    Console.WriteLine("bodytype:" + dyna.body.type);
+
                     //Renoteとかの対応
-                    if(Body.renoteId != null|| Body.text is null||Body.text == "") { return;}
+                    if (Body.renoteId != null|| Body.text is null||Body.text == "") { return;}
                     //自分の投稿だったらスルー。ID比較の方が良くない?
                     if (Body.user.username == IuserName && Body.user.host is null) { return; }
                     //dynamic型のためContainsするにはキャストが必要
@@ -284,7 +285,9 @@ namespace mkbot
                 switch (Body.type)
                 {
                     case "mention":
-                       Text =  DeleteMention(Body.note.text, Body.note.user.host switch
+                         Console.WriteLine("bodytype:" + dyna.body.type);
+
+                        Text =  DeleteMention(Body.note.text, Body.note.user.host switch
                         { null => "",_ => Body.note.user.host});
                          Arg = new NoteInfo()
                         {
@@ -316,6 +319,7 @@ namespace mkbot
                     break;
                         
                 case "follow":
+                Console.WriteLine("bodytype:" + dyna.body.type);
                 var user = new User(Body.username, Body.host);
                 Users.Add(user);
                 var json = JsonSerializer.Serialize(Users);
