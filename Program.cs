@@ -324,7 +324,7 @@ namespace mkbot
                 Users.Add(user);
                 var json = JsonSerializer.Serialize(Users);
                 File.WriteAllText(@"config\memory.json", json);
-                Console.WriteLine($"followed:@{Body.username}@{Body.host}");
+                Console.WriteLine($"followed:@{Body.username}{Body.host switch { null => "", _ => "@" + Body.host }}");
                 break;
             }
         }
