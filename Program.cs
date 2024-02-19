@@ -240,7 +240,7 @@ namespace mkbot
 #endif
             var dyna = JsonObject.Parse(e.Message);
             Console.WriteLine("type:" + dyna.type);
-            if((string)dyna.type switch { "note" => false, "notification" => false, "follow" => false, _ => true})
+            if((string)dyna.type switch { "note" => false, "notification" => false, "follow" => false, "channel" => false, _ => true})
             {
                 return;
             }
