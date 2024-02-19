@@ -326,15 +326,15 @@ namespace mkbot
                 Console.WriteLine("bodytype:" + dyna.body.type);
                 var Exist =Users.FirstOrDefault(x => x.username == Body.username && x.Host == Body.host);
                 if(Exist is null)
-                {
-                Console.WriteLine($"Skip registration(Registered):@{Body.username}{Body.host switch { null => "", _ => "@" + Body.host }}");
+                    {
+                        var user = new User(Body.username, Body.host);
+                        Users.Add(user);
+                        var json = JsonSerializer.Serialize(Users);
+                        File.WriteAllText(@"config\memory.json", json);
+                        Console.WriteLine($"followedAndRegistared:@{Body.username}{Body.host switch { null => "", _ => "@" + Body.host }}");
                         return;
-                }
-                var user = new User(Body.username, Body.host);
-                Users.Add(user);
-                var json = JsonSerializer.Serialize(Users);
-                File.WriteAllText(@"config\memory.json", json);
-                Console.WriteLine($"followedAndRegistared:@{Body.username}{Body.host switch { null => "", _ => "@" + Body.host }}");
+                    }
+                Console.WriteLine($"Skip registration(Registered):@{Body.username}{Body.host switch { null => "", _ => "@" + Body.host }}");
                 break;
             }
         }
