@@ -240,6 +240,10 @@ namespace mkbot
 #endif
             var dyna = JsonObject.Parse(e.Message);
             Console.WriteLine("type:" + dyna.type);
+            if((string)dyna.type == "emojiAdded"|| (string)dyna.type == "emojiDeleted")
+            {
+                return;
+            }
             var Body =dyna.body.body;
             switch (dyna.body.type)
             {
