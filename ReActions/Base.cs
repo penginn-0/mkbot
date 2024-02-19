@@ -124,6 +124,7 @@ namespace mkbot.ReActions
                             User.LoveLevel.Love => NotMentionLove[new Random().Next(NotMentionLove.Count)],
                             _ => throw new Exception("なんかおかしい")//娘パイロットにおすすめされたので
                         };
+                        type = ReAction.ReactionType.ReplyAndReaction;
                     }
                     else
                     {
