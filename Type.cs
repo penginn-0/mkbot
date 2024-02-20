@@ -66,13 +66,13 @@ namespace mkbot
         {
             if (LoveMax <= Love || Unit == 0)
             {
-                Console.WriteLine($"@{username}@{Host}:{Love}=>{Love}");
+                Console.WriteLine($"@{username}{Host switch { null => "", _ => "@" + Host }}:{Love}=>{Love + Unit}");
                 return;
             }
             var change = LoveChangeFlag();
             if (change||(change ==false && Unit < 0))
             {
-                Console.WriteLine($"@{username}@{Host}:{Love}=>{Love + Unit}");
+                Console.WriteLine($"@{username}{Host switch { null =>"",_ =>"@"+Host}}:{Love}=>{Love + Unit}");
                 Love += Unit;
                 LoveChangedTime.Add(DateTime.Now);
                 var json = JsonSerializer.Serialize(Program.Users);
