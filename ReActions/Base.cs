@@ -49,6 +49,7 @@ namespace mkbot.ReActions
             NotMentionLove = Op1.NotMentionLove;
             NotMentionEmoji = Op1.NotMentionEmoji;
             Unit = new(new int[] { User.LoveUnit0, User.LoveUnit1, User.LoveUnit2 });
+            NotMentionReaction = true;
         }
         public Base(BaseArgsOption2 Op2)
         {
@@ -62,7 +63,9 @@ namespace mkbot.ReActions
             NotMentionLove = Op2.NotMentionLove;
             NotMentionEmoji = Op2.NotMentionEmoji;
             Unit = Op2.Unit;
+            NotMentionReaction = true;
         }
+        private readonly bool NotMentionReaction = false;
         private readonly List<int> Unit;
         public readonly List<string>  Keyword;
         public readonly List<string> Emoji;
@@ -103,6 +106,7 @@ namespace mkbot.ReActions
                 var type = ReAction.ReactionType.none;
                 if (note.IsNotMention)
                 {
+                    if(NotMentionReaction == false) { return null; }
                     Emoji = NotMentionEmoji[(int)user.GetLoveLevel()];
                     Reply = user.GetLoveLevel() switch
                     {
