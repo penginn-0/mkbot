@@ -26,7 +26,6 @@ namespace mkbot.ReActions
             Reply_Hate = Min.Hate;
             Reply_Normal = Min.Normal;
             Reply_Love = Min.Love;
-            UseNotMention = false;
             Unit = new (new int[] { User.LoveUnit0, User.LoveUnit1, User.LoveUnit2 });
         }
         public Base(BaseArgsOption0 Op0)
@@ -36,7 +35,6 @@ namespace mkbot.ReActions
             Reply_Hate = Op0.Hate;
             Reply_Normal = Op0.Normal;
             Reply_Love = Op0.Love;
-            UseNotMention = false;
             Unit = Op0.Unit;
         }
         public Base(BaseArgsOption1 Op1)
@@ -51,7 +49,6 @@ namespace mkbot.ReActions
             NotMentionLove = Op1.NotMentionLove;
             NotMentionEmoji = Op1.NotMentionEmoji;
             Unit = new(new int[] { User.LoveUnit0, User.LoveUnit1, User.LoveUnit2 });
-            UseNotMention = true;
         }
         public Base(BaseArgsOption2 Op2)
         {
@@ -65,10 +62,8 @@ namespace mkbot.ReActions
             NotMentionLove = Op2.NotMentionLove;
             NotMentionEmoji = Op2.NotMentionEmoji;
             Unit = Op2.Unit;
-            UseNotMention = true;
         }
         private readonly List<int> Unit;
-        private readonly bool UseNotMention;
         public readonly List<string>  Keyword;
         public readonly List<string> Emoji;
         public readonly List<string> Reply_Hate;
@@ -103,48 +98,35 @@ namespace mkbot.ReActions
                         nId = note.nId
                     };
                 }
-                var Reply = user.GetLoveLevel() switch
-                {
-                    User.LoveLevel.Hate => Reply_Hate[new Random().Next(Reply_Hate.Count)],
-                    User.LoveLevel.Normal => Reply_Normal[new Random().Next(Reply_Normal.Count)],
-                    User.LoveLevel.Love => Reply_Love[new Random().Next(Reply_Love.Count)],
-                    _ => throw new Exception("なんかおかしい")//娘パイロットにおすすめされたので
-                };
-                var Emoji = this.Emoji[(int)user.GetLoveLevel()];
-                var type = GetType(Reply,Emoji);
+                string Reply ="";
+                string Emoji = "";
+                var type = ReAction.ReactionType.none;
                 if (note.IsNotMention)
                 {
-                    if (UseNotMention)
+                    Emoji = NotMentionEmoji[(int)user.GetLoveLevel()];
+                    Reply = user.GetLoveLevel() switch
                     {
-                        Emoji = NotMentionEmoji[(int)user.GetLoveLevel()]; 
-                        Reply = user.GetLoveLevel() switch
-                        {
-                            User.LoveLevel.Hate => NotMentionHate[new Random().Next(NotMentionHate.Count)],
-                            User.LoveLevel.Normal => NotMentionNormal[new Random().Next(NotMentionNormal.Count)],
-                            User.LoveLevel.Love => NotMentionLove[new Random().Next(NotMentionLove.Count)],
-                            _ => throw new Exception("なんかおかしい")//娘パイロットにおすすめされたので
-                        };
-                        type = ReAction.ReactionType.ReplyAndReaction;
-                    }
-                    else
-                    {
-                        return null;
-                    }
+                        User.LoveLevel.Hate => NotMentionHate[new Random().Next(NotMentionHate.Count)],
+                        User.LoveLevel.Normal => NotMentionNormal[new Random().Next(NotMentionNormal.Count)],
+                        User.LoveLevel.Love => NotMentionLove[new Random().Next(NotMentionLove.Count)],
+                        _ => throw new Exception("なんかおかしい")//娘パイロットにおすすめされたので
+                    };
                 }
+                else
+                {
+                    Reply = user.GetLoveLevel() switch
+                    {
+                        User.LoveLevel.Hate => Reply_Hate[new Random().Next(Reply_Hate.Count)],
+                        User.LoveLevel.Normal => Reply_Normal[new Random().Next(Reply_Normal.Count)],
+                        User.LoveLevel.Love => Reply_Love[new Random().Next(Reply_Love.Count)],
+                        _ => throw new Exception("なんかおかしい")//娘パイロットにおすすめされたので
+                    };
+                    Emoji = this.Emoji[(int)user.GetLoveLevel()];
+                }
+                type = GetType(Reply, Emoji);
                 if (type != ReAction.ReactionType.none) 
                 {//リアクションか返信をするときのみ親密度を変動させる
                     user.CalcLove(Unit[(int)user.GetLoveLevel()]); 
-                }
-                if(Reply == "")
-                {
-                    if(Emoji == "")
-                    {
-                        return null;
-                    }
-                    else
-                    {
-                        type = ReAction.ReactionType.ReAction;
-                    }
                 }
                 return new ReAction()
                 {
