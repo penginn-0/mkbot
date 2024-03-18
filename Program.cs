@@ -393,11 +393,32 @@ namespace mkbot
                     }));
                     break;
                 case ReAction.ReactionType.Registar:
-                    Post(JsonSerializer.Serialize(new Following_Create()
+                    var r = Post(JsonSerializer.Serialize(new Following_Create()
                     {
                         i = Cfg.token,
                         userId = Reac.uId
                     }));
+                    switch(r)
+                    {
+                        case 0:
+                            Process(new ReAction()
+                            {
+                                Type = ReAction.ReactionType.ReAction,
+                                nId = Reac.nId,
+                                Emoji = "👍",
+                            });
+                            break;
+                        case -1:
+                            Process(new ReAction()
+                            {
+                                Type = ReAction.ReactionType.ReAction,
+                                nId = Reac.nId,
+                                Emoji = "❓",
+                            });
+                            break;
+                        case -2:
+                            break;
+                    };
                     break;
                 case ReAction.ReactionType.none:
                     return true;
@@ -429,29 +450,37 @@ namespace mkbot
                 Console.WriteLine(ex.Message);
             }
         }
-        static void Post(string Json)
+        static int Post(string Json)
         {
             try
             {
                 var Content = new StringContent(Json, Encoding.UTF8, @"application/json");
                 var res = Hc.PostAsync($"https://{Cfg.host}/api/following/create", Content).Result;
-                var Ret = res.Content.ReadAsStringAsync().Result;
+                var JsonRet = res.Content.ReadAsStringAsync().Result;
                 if (res.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     Console.WriteLine($"endpoint:following/create,statuscode:{res.StatusCode}");
+                    return 0;
                 }
                 else
                 {
-                    Console.WriteLine($"endpoint:following/create,statuscode:{res.StatusCode}+\r\n{Ret}");
+                    Console.WriteLine($"endpoint:following/create,statuscode:{res.StatusCode}+\r\n{JsonRet}");
+                    var Ret = JsonObject.Parse(JsonRet);
+                   if( (string)Ret.error.id == "35387507-38c7-4cb9-9197-300b93783fa0")
+                    {
+                        return -1;
+                    }
+                   
                 }
 #if DEBUG
-                Console.WriteLine(Ret + "\r\n");
+                Console.WriteLine(JsonRet + "\r\n");
 #endif
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }
+            return -2;
         }
         static void InitAndAddFunction() 
         {

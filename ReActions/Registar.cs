@@ -17,28 +17,12 @@ namespace mkbot.ReActions
 
             if (base.CheckKeyword(note.Text))
             {
-                var user = Program.Users.Where(x => x.username == note.username && x.Host == note.Host).FirstOrDefault();
-                if (user is null)
+                return new ReAction()
                 {
-                    return new ReAction()
-                    {
-                        Type = ReAction.ReactionType.Registar,
-                        nId = note.nId,
-                        uId = note.uId,
-                        Emoji = "👍",
-                        Visibility = note.Visibility,
-                        visibleUserIds = new string[1] { note.uId }
-                    };
-                }
-                else
-                {
-                    return new ReAction()
-                    {
-                        Type = ReAction.ReactionType.ReAction,
-                        nId = note.nId,
-                        Emoji = "❓",
-                    };
-                }
+                    Type = ReAction.ReactionType.Registar,
+                    nId = note.nId,
+                    uId = note.uId,
+                };
             }
             return null;
         }
