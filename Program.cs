@@ -20,7 +20,9 @@ namespace mkbot
         static List<Func<NoteInfo, ReAction?>> funcs =new();
         static System.Timers.Timer timer = new();
         static System.Timers.Timer Posttimer = new();
+        static System.Timers.Timer TimePosttimer = new();
         public static List<string> PostStrings = new();
+        public static List<TimePost> TimePosts = new();
         static readonly int WaitTimeMS = 1500;
         public static void Main()
         {
@@ -45,6 +47,10 @@ namespace mkbot
             if(Cfg.UsePost)
             {
                 LoadPostMessages();
+            }
+            if(Cfg.UseTimePost)
+            {
+                LoadTimePostMessages();
             }
             LoadMemory();
             InitAndAddFunction();
@@ -107,6 +113,41 @@ namespace mkbot
                 Console.WriteLine("posts not found");
             }
         }
+        static void LoadTimePostMessages()
+        {
+            if (File.Exists(@"config\Timepost.json"))
+            {
+                Console.WriteLine("Loading Timepost...");
+                var json = File.ReadAllText(@"config\Timepost.json");
+                var Dyna = JsonObject.Parse(json);
+                foreach(var m in Dyna.Messges)
+                {
+                   var TP = new TimePost()
+                    {
+                        Text = m.Text,
+                        Month   = m.IsDefined("Month") switch { false => -1, _ => (int)m.Month },
+                        Day     = m.IsDefined("Day")   switch { false => -1, _ => (int)m.Day },
+                        Hour    = (int)m.Hour,
+                        Minute  = (int)m.Minute 
+                    };
+                   TimePosts.Add(TP);
+                }
+                Console.WriteLine($"Timepost loaded\r\nPostStringsCount:{TimePosts.Count}");
+                if (TimePosts.Count > 0)
+                {
+
+                    TimePosttimer.Elapsed += PostTimePostMessage;
+                    TimePosttimer.Interval = ((60 - DateTime.Now.Second) * 1000);
+
+                    TimePosttimer.Enabled = true;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Timepost not found");
+            }
+        }
+
         static void PostMessage(object? sender, ElapsedEventArgs e)
         {
             dynamic Json = new JsonObject();
@@ -131,6 +172,41 @@ namespace mkbot
 
             Posttimer.Interval = (new Random().Next(Cfg.PostIntervalRandomMinuteMin,Cfg.PostIntervalRandomMinuteMax)*60000);
             Console.WriteLine($"NextPostinterval:{Posttimer.Interval / 60000}");
+        }
+        static void PostTimePostMessage(object? sender, ElapsedEventArgs e) 
+        { 
+            if(TimePosttimer.Interval != 60000) { TimePosttimer.Interval = 60000;}
+            var Current = DateTime.Now;
+            var Items = TimePosts.Where(x => x.Hour == Current.Hour && x.Minute == Current.Minute);
+          foreach(var Item in Items)
+            {
+                if (Item.Month is not < 1)
+                {
+                    if (Item.Month != Current.Month)
+                    {
+                        return;
+                    }
+                }
+                if (Item.Day is not < 1)
+                {
+                    if (Item.Day != Current.Day)
+                    {
+                        return;
+                    }
+                }
+                if (Item.Text.Length is not > 1)
+                {
+                    continue;
+                }
+                dynamic Json = new JsonObject();
+                Json.i = Cfg.token;
+                Json.text =Item.Text;
+#if DEBUG
+                Json.visibility = "followers";
+                Json.localOnly = true;
+#endif
+                Post("notes/create", Json.ToString());
+            }
         }
         static void LoadMemory()
         {
@@ -593,6 +669,7 @@ namespace mkbot
         public string InitMessage { get; set; }
         public string InitedPost { get; set; }
         public bool UsePost { get; set ; }
+        public bool UseTimePost { get; set; }
         public int PostIntervalMinute { get; set; }
         public int PostIntervalRandomMinuteMin { get; set; }
         public int PostIntervalRandomMinuteMax { get; set; }
@@ -674,4 +751,11 @@ namespace mkbot
     public List<string> NotMentionEmoji { get; set; }
     public List<int> Unit { get; set; }
     }
-
+    public class TimePost
+    {
+    public string Text { get; set; }
+    public int Month { get; set; }
+    public int Day { get; set; }
+    public int Hour { get; set; }
+    public int Minute { get; set; }
+    }
