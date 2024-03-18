@@ -242,7 +242,6 @@ namespace mkbot
                     var Text = (string)Body.text;
                     //メンションだったらスルー(メンション時判定があるので二重リアクション回避)
                     if (Text.Contains($"@{IuserName}@{Cfg.host}")|| Text.Contains($"@{IuserName}")) { return; }
-                    if (Body.user.isBot) { return;}
                     Text= DeleteMention(Body.text, Body.user.host switch
                     { null => "", _ => Body.user.host});
                     var Arg = new NoteInfo()
