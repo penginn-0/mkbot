@@ -52,22 +52,16 @@ namespace mkbot
             {
                 Console.WriteLine(Cfg.InitMessage.Replace("<r>", "\r\n"));
                 InitSoclket();
-                if(Cfg.InitedPost != ""&& Cfg.InitedPost != null) 
-                { 
-#if DEBUG
-                Post("notes/create", JsonSerializer.Serialize(new Notes_Create_2()
+                if(Cfg.InitedPost != ""&& Cfg.InitedPost != null)
                 {
-                    i = Cfg.token,
-                    text = Cfg.InitedPost,
-                    visibility = "followers"
-                }));
-#else
-            Post("notes/create", JsonSerializer.Serialize(new Notes_Create_2()
-            {
-                i = Cfg.token,
-                text =  Cfg.InitedPost
-            }));
+                    dynamic Json = new JsonObject();
+                    Json.i = Cfg.token;
+                    Json.text = Cfg.InitedPost;
+#if DEBUG
+                    Json.visibility = "followers";
+                    Json.localOnly = true;
 #endif
+                    Post("notes/create", Json.ToString());
                 }
                 while (true)
                 {
@@ -115,37 +109,26 @@ namespace mkbot
         }
         static void PostMessage(object? sender, ElapsedEventArgs e)
         {
+            dynamic Json = new JsonObject();
+            Json.i = Cfg.token;
+            Json.text = PostStrings[new Random().Next(PostStrings.Count)];
 #if DEBUG
-            Post("notes/create", JsonSerializer.Serialize(new Notes_Create_2()
-            {
-                i = Cfg.token,
-                text = PostStrings[new Random().Next(PostStrings.Count)],
-                visibility = "followers"
-            }));
-#else
-            Post("notes/create", JsonSerializer.Serialize(new Notes_Create()
-            {
-                i = Cfg.token,
-                text = PostStrings[new Random().Next(PostStrings.Count)]
-            }));
+            Json.visibility = "followers";
+            Json.localOnly = true;
 #endif
+            Post("notes/create", Json.ToString());
         }
         static void PostMessageIntervalRand(object? sender, ElapsedEventArgs e)
         {
+            dynamic Json = new JsonObject();
+            Json.i=Cfg.token;
+            Json.text = PostStrings[new Random().Next(PostStrings.Count)];
 #if DEBUG
-            Post("notes/create", JsonSerializer.Serialize(new Notes_Create_2()
-            {
-                i = Cfg.token,
-                text = PostStrings[new Random().Next(PostStrings.Count)],
-               visibility = "followers"
-            }));
-#else
-            Post("notes/create", JsonSerializer.Serialize(new Notes_Create()
-            {
-                i = Cfg.token,
-                text = PostStrings[new Random().Next(PostStrings.Count)]
-            }));
+            Json.visibility = "followers";
+            Json.localOnly = true;
 #endif
+            Post("notes/create",Json.ToString());
+
             Posttimer.Interval = (new Random().Next(Cfg.PostIntervalRandomMinuteMin,Cfg.PostIntervalRandomMinuteMax)*60000);
             Console.WriteLine($"NextPostinterval:{Posttimer.Interval / 60000}");
         }
@@ -180,7 +163,7 @@ namespace mkbot
                 var res = Hc.PostAsync($"https://{Cfg.host}/api/i", Content);
                 var con = res.Result.Content.ReadAsStringAsync().Result;
 
-                var ret = DynaJson.JsonObject.Parse(con);
+                var ret = JsonObject.Parse(con);
                 IuserName = ret.username;
             }
             catch (Exception ex)
@@ -250,6 +233,7 @@ namespace mkbot
                 case "note":
                     Console.WriteLine("bodytype:" + dyna.body.type);
 
+                    if ((bool)Body.user.isBot) { return; }
                     //Renoteとかの対応
                     if (Body.renoteId != null|| Body.text is null||Body.text == "") { return;}
                     //自分の投稿だったらスルー。ID比較の方が良くない?
@@ -258,6 +242,7 @@ namespace mkbot
                     var Text = (string)Body.text;
                     //メンションだったらスルー(メンション時判定があるので二重リアクション回避)
                     if (Text.Contains($"@{IuserName}@{Cfg.host}")|| Text.Contains($"@{IuserName}")) { return; }
+                    if (Body.user.isBot) { return;}
                     Text= DeleteMention(Body.text, Body.user.host switch
                     { null => "", _ => Body.user.host});
                     var Arg = new NoteInfo()
@@ -290,8 +275,8 @@ namespace mkbot
                 {
                     case "mention":
                          Console.WriteLine("bodytype:" + dyna.body.type);
-
-                        Text =  DeleteMention(Body.note.text, Body.note.user.host switch
+                            if ((bool)Body.note.user.isBot) { return; }
+                            Text =  DeleteMention(Body.note.text, Body.note.user.host switch
                         { null => "",_ => Body.note.user.host});
                          Arg = new NoteInfo()
                         {
